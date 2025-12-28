@@ -802,7 +802,7 @@ export const getMaterialAlerts = async (): Promise<{ low_stock: RawMaterial[]; o
 // Product-Material linking
 export const getProductMaterials = async (productId: string): Promise<{ materials: ProductMaterial[]; material_cost: number }> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials`);
+        const response = await fetchWithAuth(`/api/v1/product-materials/${productId}`);
         if (response.ok) {
             const data = await response.json();
             return { materials: data.data || [], material_cost: data.material_cost || 0 };
@@ -815,7 +815,7 @@ export const getProductMaterials = async (productId: string): Promise<{ material
 
 export const linkMaterial = async (productId: string, materialId: string, quantityUsed: number): Promise<boolean> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials`, {
+        const response = await fetchWithAuth(`/api/v1/product-materials`, {
             method: 'POST',
             body: JSON.stringify({ product_id: productId, material_id: materialId, quantity_used: quantityUsed }),
         });
@@ -828,7 +828,7 @@ export const linkMaterial = async (productId: string, materialId: string, quanti
 
 export const unlinkMaterial = async (productId: string, materialId: string): Promise<boolean> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials/${materialId}`, {
+        const response = await fetchWithAuth(`/api/v1/product-materials/${productId}/${materialId}`, {
             method: 'DELETE',
         });
         return response.ok;
@@ -840,7 +840,7 @@ export const unlinkMaterial = async (productId: string, materialId: string): Pro
 
 export const calculateProductCost = async (productId: string): Promise<{ total_cost: number; breakdown: any[] }> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/products/${productId}/cost`);
+        const response = await fetchWithAuth(`/api/v1/product-materials/${productId}/cost`);
         if (response.ok) {
             const data = await response.json();
             return { total_cost: data.total_cost || 0, breakdown: data.breakdown || [] };
@@ -850,3 +850,4 @@ export const calculateProductCost = async (productId: string): Promise<{ total_c
     }
     return { total_cost: 0, breakdown: [] };
 };
+
