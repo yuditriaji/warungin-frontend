@@ -497,3 +497,65 @@ export const deleteCustomer = async (id: string): Promise<boolean> => {
     }
     return false;
 };
+
+// Inventory types
+export interface InventoryItem {
+    product_id: string;
+    product_name: string;
+    sku: string;
+    stock_qty: number;
+    price: number;
+    cost: number;
+    stock_value: number;
+    status: 'ok' | 'low' | 'out';
+}
+
+export interface InventorySummary {
+    total_products: number;
+    total_stock_value: number;
+    low_stock_count: number;
+    out_of_stock_count: number;
+}
+
+// Inventory API
+export const getInventory = async (filter?: 'all' | 'low' | 'out'): Promise<InventoryItem[]> => {
+    try {
+        let url = '/api/v1/inventory';
+        if (filter && filter !== 'all') url += '?filter=' + filter;
+
+        const response = await fetchWithAuth(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch inventory:', error);
+    }
+    return [];
+};
+
+export const getInventorySummary = async (): Promise<InventorySummary | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/inventory/summary');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch inventory summary:', error);
+    }
+    return null;
+};
+
+export const updateStock = async (productId: string, quantity: number): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/inventory/${productId}/stock`, {
+            method: 'PUT',
+            body: JSON.stringify({ quantity }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to update stock:', error);
+    }
+    return false;
+};
