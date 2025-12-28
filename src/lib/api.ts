@@ -418,3 +418,82 @@ export const getProductSalesReport = async (startDate?: string, endDate?: string
     }
     return [];
 };
+
+// Customer types
+export interface Customer {
+    id: string;
+    tenant_id: string;
+    name: string;
+    phone: string;
+    email: string;
+    address: string;
+    created_at: string;
+}
+
+export interface CreateCustomerInput {
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+}
+
+// Customer API
+export const getCustomers = async (search?: string): Promise<Customer[]> => {
+    try {
+        let url = '/api/v1/customers';
+        if (search) url += '?search=' + encodeURIComponent(search);
+
+        const response = await fetchWithAuth(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch customers:', error);
+    }
+    return [];
+};
+
+export const createCustomer = async (customer: CreateCustomerInput): Promise<Customer | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/customers', {
+            method: 'POST',
+            body: JSON.stringify(customer),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to create customer:', error);
+    }
+    return null;
+};
+
+export const updateCustomer = async (id: string, customer: CreateCustomerInput): Promise<Customer | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/customers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(customer),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update customer:', error);
+    }
+    return null;
+};
+
+export const deleteCustomer = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/customers/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete customer:', error);
+    }
+    return false;
+};
