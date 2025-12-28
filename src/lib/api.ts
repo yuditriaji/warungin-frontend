@@ -135,3 +135,87 @@ export const getCurrentUser = async (): Promise<{ user: User; tenant: Tenant } |
     }
     return null;
 };
+
+// Product types
+export interface Product {
+    id: string;
+    tenant_id: string;
+    category_id?: string;
+    name: string;
+    sku: string;
+    price: number;
+    cost: number;
+    stock_qty: number;
+    image_url: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateProductInput {
+    name: string;
+    sku?: string;
+    price: number;
+    cost?: number;
+    stock_qty?: number;
+    category_id?: string;
+    image_url?: string;
+}
+
+// Product API functions
+export const getProducts = async (): Promise<Product[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/products');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch products:', error);
+    }
+    return [];
+};
+
+export const createProduct = async (product: CreateProductInput): Promise<Product | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/products', {
+            method: 'POST',
+            body: JSON.stringify(product),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to create product:', error);
+    }
+    return null;
+};
+
+export const updateProduct = async (id: string, product: CreateProductInput): Promise<Product | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(product),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update product:', error);
+    }
+    return null;
+};
+
+export const deleteProduct = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete product:', error);
+    }
+    return false;
+};
