@@ -30,6 +30,7 @@ export default function MaterialsPage() {
         unit: 'kg',
         unit_price: 0,
         stock_qty: 0,
+        min_stock_level: 10,
         supplier: '',
     });
 
@@ -65,7 +66,7 @@ export default function MaterialsPage() {
         }
         setShowModal(false);
         setEditingMaterial(null);
-        setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, supplier: '' });
+        setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, min_stock_level: 10, supplier: '' });
         loadData();
     };
 
@@ -76,6 +77,7 @@ export default function MaterialsPage() {
             unit: material.unit,
             unit_price: material.unit_price,
             stock_qty: material.stock_qty,
+            min_stock_level: material.min_stock_level || 10,
             supplier: material.supplier,
         });
         setShowModal(true);
@@ -106,14 +108,16 @@ export default function MaterialsPage() {
 
     const filteredMaterials = materials.filter(m => {
         const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
-        if (filter === 'low') return matchesSearch && m.stock_qty > 0 && m.stock_qty < 10;
+        const minLevel = m.min_stock_level || 10;
+        if (filter === 'low') return matchesSearch && m.stock_qty > 0 && m.stock_qty < minLevel;
         if (filter === 'out') return matchesSearch && m.stock_qty <= 0;
         return matchesSearch;
     });
 
-    const getStockBadge = (qty: number) => {
-        if (qty <= 0) return <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Habis</span>;
-        if (qty < 10) return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Rendah</span>;
+    const getStockBadge = (material: RawMaterial) => {
+        const minLevel = material.min_stock_level || 10;
+        if (material.stock_qty <= 0) return <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Habis</span>;
+        if (material.stock_qty < minLevel) return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Rendah</span>;
         return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Cukup</span>;
     };
 
@@ -128,7 +132,7 @@ export default function MaterialsPage() {
                     <button
                         onClick={() => {
                             setEditingMaterial(null);
-                            setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, supplier: '' });
+                            setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, min_stock_level: 10, supplier: '' });
                             setShowModal(true);
                         }}
                         className="bg-purple-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-purple-700"
@@ -161,8 +165,8 @@ export default function MaterialsPage() {
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {f === 'all' ? 'Semua' : f === 'low' ? 'Rendah' : 'Habis'}
@@ -220,7 +224,7 @@ export default function MaterialsPage() {
                                         <td className="px-4 py-3 text-gray-500">{material.unit}</td>
                                         <td className="px-4 py-3 text-gray-500">{formatPrice(material.unit_price)}</td>
                                         <td className="px-4 py-3 text-gray-900 font-medium">{material.stock_qty.toFixed(2)}</td>
-                                        <td className="px-4 py-3">{getStockBadge(material.stock_qty)}</td>
+                                        <td className="px-4 py-3">{getStockBadge(material)}</td>
                                         <td className="px-4 py-3 text-gray-500">{material.supplier || '-'}</td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-2">
@@ -304,15 +308,28 @@ export default function MaterialsPage() {
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Stok Awal</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.stock_qty}
-                                    onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stok Awal</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.stock_qty}
+                                        onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Min. Stok</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.min_stock_level}
+                                        onChange={(e) => setFormData({ ...formData, min_stock_level: Number(e.target.value) })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                        placeholder="10"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>

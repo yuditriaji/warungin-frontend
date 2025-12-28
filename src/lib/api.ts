@@ -692,6 +692,7 @@ export interface RawMaterial {
     unit: string;
     unit_price: number;
     stock_qty: number;
+    min_stock_level: number;
     supplier: string;
     created_at: string;
 }
@@ -709,6 +710,7 @@ export interface CreateMaterialInput {
     unit: string;
     unit_price: number;
     stock_qty: number;
+    min_stock_level: number;
     supplier: string;
 }
 
