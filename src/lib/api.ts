@@ -604,3 +604,83 @@ export const checkPaymentStatus = async (orderId: string): Promise<PaymentStatus
     }
     return null;
 };
+
+// Subscription types
+export interface PlanInfo {
+    id: string;
+    name: string;
+    price: number;
+    max_users: number;
+    max_products: number;
+    max_transactions_daily: number;
+    max_transactions_monthly: number;
+    max_outlets: number;
+    data_retention_days: number;
+    features: string[];
+}
+
+export interface SubscriptionUsage {
+    users: number;
+    max_users: number;
+    products: number;
+    max_products: number;
+    transactions_today: number;
+    max_transactions_daily: number;
+    transactions_month: number;
+    max_transactions_monthly: number;
+    outlets: number;
+    max_outlets: number;
+}
+
+// Subscription API
+export const getPlans = async (): Promise<PlanInfo[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription/plans');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch plans:', error);
+    }
+    return [];
+};
+
+export const getSubscription = async (): Promise<{ subscription: any; plan: PlanInfo } | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch subscription:', error);
+    }
+    return null;
+};
+
+export const getUsage = async (): Promise<SubscriptionUsage | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription/usage');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch usage:', error);
+    }
+    return null;
+};
+
+export const upgradePlan = async (plan: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription/upgrade', {
+            method: 'POST',
+            body: JSON.stringify({ plan }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to upgrade plan:', error);
+    }
+    return false;
+};
