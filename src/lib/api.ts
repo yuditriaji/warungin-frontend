@@ -559,3 +559,48 @@ export const updateStock = async (productId: string, quantity: number): Promise<
     }
     return false;
 };
+
+// Payment types
+export interface QRISResponse {
+    qr_string: string;
+    qr_image_url: string;
+    expires_at: string;
+    order_id: string;
+    gross_amount: number;
+}
+
+export interface PaymentStatus {
+    order_id: string;
+    transaction_status: string;
+    payment_type: string;
+}
+
+// Payment API
+export const createQRIS = async (transactionId: string): Promise<QRISResponse | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/payment/qris', {
+            method: 'POST',
+            body: JSON.stringify({ transaction_id: transactionId }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to create QRIS:', error);
+    }
+    return null;
+};
+
+export const checkPaymentStatus = async (orderId: string): Promise<PaymentStatus | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/payment/status/${orderId}`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to check payment status:', error);
+    }
+    return null;
+};
