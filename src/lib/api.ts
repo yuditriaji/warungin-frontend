@@ -357,3 +357,64 @@ export const getRecentTransactions = async (): Promise<Transaction[]> => {
     }
     return [];
 };
+
+// Reports types
+export interface SalesReport {
+    start_date: string;
+    end_date: string;
+    total_sales: number;
+    total_cost: number;
+    gross_profit: number;
+    total_transactions: number;
+    total_items_sold: number;
+    average_per_tx: number;
+    daily_sales: { date: string; sales: number; transactions: number }[];
+}
+
+export interface ProductSalesReport {
+    product_id: string;
+    product_name: string;
+    total_qty: number;
+    total_sales: number;
+    total_cost: number;
+    profit: number;
+}
+
+// Reports API
+export const getSalesReport = async (startDate?: string, endDate?: string): Promise<SalesReport | null> => {
+    try {
+        let url = '/api/v1/reports/sales';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetchWithAuth(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch sales report:', error);
+    }
+    return null;
+};
+
+export const getProductSalesReport = async (startDate?: string, endDate?: string): Promise<ProductSalesReport[]> => {
+    try {
+        let url = '/api/v1/reports/products';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetchWithAuth(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch product sales report:', error);
+    }
+    return [];
+};
