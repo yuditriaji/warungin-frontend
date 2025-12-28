@@ -297,3 +297,63 @@ export const getTransaction = async (id: string): Promise<Transaction | null> =>
     }
     return null;
 };
+
+// Dashboard types
+export interface DashboardStats {
+    today_sales: number;
+    today_transactions: number;
+    today_items_sold: number;
+    week_sales: number;
+    week_transactions: number;
+    month_sales: number;
+    month_transactions: number;
+    total_products: number;
+    low_stock_products: number;
+}
+
+export interface TopProduct {
+    product_id: string;
+    product_name: string;
+    total_qty: number;
+    total_sales: number;
+}
+
+// Dashboard API functions
+export const getDashboardStats = async (): Promise<DashboardStats | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/dashboard/stats');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+    }
+    return null;
+};
+
+export const getTopProducts = async (): Promise<TopProduct[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/dashboard/top-products');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch top products:', error);
+    }
+    return [];
+};
+
+export const getRecentTransactions = async (): Promise<Transaction[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/dashboard/recent-transactions');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch recent transactions:', error);
+    }
+    return [];
+};
