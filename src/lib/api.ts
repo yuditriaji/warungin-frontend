@@ -145,11 +145,21 @@ export interface Product {
     sku: string;
     price: number;
     cost: number;
+    tax_rate: number;
     stock_qty: number;
     image_url: string;
     is_active: boolean;
+    modifiers?: ProductModifierType[];
     created_at: string;
     updated_at: string;
+}
+
+export interface ProductModifierType {
+    id: string;
+    product_id: string;
+    name: string;
+    options: string; // JSON string: [{"name":"Large", "price":5000}]
+    is_required: boolean;
 }
 
 export interface CreateProductInput {
@@ -157,6 +167,7 @@ export interface CreateProductInput {
     sku?: string;
     price: number;
     cost?: number;
+    tax_rate?: number;
     stock_qty?: number;
     category_id?: string;
     image_url?: string;
@@ -234,6 +245,7 @@ export interface Transaction {
     id: string;
     tenant_id: string;
     invoice_number: string;
+    order_number: number; // Queue number, resets daily
     user_id: string;
     customer_id?: string;
     items: TransactionItem[];
