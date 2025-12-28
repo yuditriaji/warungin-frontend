@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Product, getProducts } from '@/lib/api';
+import { Product, getProducts, createTransaction, Transaction } from '@/lib/api';
 
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<{ product: Product; qty: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
     useEffect(() => {
         loadProducts();
@@ -52,6 +55,32 @@ export default function POSPage() {
 
     const getTotal = () => {
         return cart.reduce((sum, item) => sum + (item.product.price * item.qty), 0);
+    };
+
+    const handleCheckout = async (paymentMethod: string) => {
+        if (cart.length === 0) return;
+
+        setProcessing(true);
+
+        const result = await createTransaction({
+            items: cart.map(item => ({
+                product_id: item.product.id,
+                quantity: item.qty,
+            })),
+            payment_method: paymentMethod,
+        });
+
+        if (result) {
+            setLastTransaction(result);
+            setShowSuccess(true);
+            setCart([]);
+            // Reload products to update stock
+            loadProducts();
+        } else {
+            alert('Gagal memproses transaksi');
+        }
+
+        setProcessing(false);
     };
 
     const formatPrice = (price: number) => {
@@ -124,6 +153,7 @@ export default function POSPage() {
                                         </div>
                                         <h3 className="font-medium text-gray-900 text-sm truncate">{product.name}</h3>
                                         <p className="text-purple-600 font-bold text-sm">{formatPrice(product.price)}</p>
+                                        <p className="text-xs text-gray-400">Stok: {product.stock_qty}</p>
                                     </button>
                                 ))}
                             </div>
@@ -153,7 +183,7 @@ export default function POSPage() {
                                 <div key={item.product.id} className="flex gap-3 p-2 bg-gray-50 rounded-lg">
                                     <div className="flex-1">
                                         <p className="font-medium text-sm text-gray-900 truncate">{item.product.name}</p>
-                                        <p className="text-purple-600 text-sm">{formatPrice(item.product.price)}</p>
+                                        <p className="text-purple-600 text-sm">{formatPrice(item.product.price * item.qty)}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
@@ -181,18 +211,77 @@ export default function POSPage() {
                             <span className="text-gray-600">Total</span>
                             <span className="text-xl font-bold text-gray-900">{formatPrice(getTotal())}</span>
                         </div>
-                        <button
-                            disabled={cart.length === 0}
-                            className={`w-full py-3 rounded-xl font-semibold transition-colors ${cart.length === 0
-                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                                }`}
-                        >
-                            Bayar
-                        </button>
+
+                        {/* Payment Buttons */}
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => handleCheckout('cash')}
+                                disabled={cart.length === 0 || processing}
+                                className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : 'bg-green-600 text-white hover:bg-green-700'
+                                    }`}
+                            >
+                                💵 Bayar Tunai
+                            </button>
+                            <button
+                                onClick={() => handleCheckout('qris')}
+                                disabled={cart.length === 0 || processing}
+                                className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    }`}
+                            >
+                                📱 QRIS
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccess && lastTransaction && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Transaksi Berhasil!</h2>
+                        <p className="text-gray-500 mb-4">Invoice: {lastTransaction.invoice_number}</p>
+                        <p className="text-2xl font-bold text-purple-600 mb-6">{formatPrice(lastTransaction.total)}</p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowSuccess(false)}
+                                className="flex-1 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowSuccess(false);
+                                    // TODO: Print receipt
+                                }}
+                                className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
+                            >
+                                Cetak Struk
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Processing Overlay */}
+            {processing && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-8 text-center">
+                        <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-600">Memproses transaksi...</p>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

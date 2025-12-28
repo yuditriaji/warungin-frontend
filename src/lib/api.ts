@@ -219,3 +219,81 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
     }
     return false;
 };
+
+// Transaction types
+export interface TransactionItem {
+    id: string;
+    product_id: string;
+    product?: Product;
+    quantity: number;
+    unit_price: number;
+    subtotal: number;
+}
+
+export interface Transaction {
+    id: string;
+    tenant_id: string;
+    invoice_number: string;
+    user_id: string;
+    customer_id?: string;
+    items: TransactionItem[];
+    subtotal: number;
+    discount: number;
+    tax: number;
+    total: number;
+    status: 'completed' | 'voided' | 'pending';
+    payment_method: string;
+    payment_ref?: string;
+    created_at: string;
+}
+
+export interface CreateTransactionInput {
+    items: { product_id: string; quantity: number }[];
+    customer_id?: string;
+    discount?: number;
+    tax?: number;
+    payment_method: string;
+}
+
+// Transaction API functions
+export const getTransactions = async (): Promise<Transaction[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/transactions');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch transactions:', error);
+    }
+    return [];
+};
+
+export const createTransaction = async (input: CreateTransactionInput): Promise<Transaction | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/transactions', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to create transaction:', error);
+    }
+    return null;
+};
+
+export const getTransaction = async (id: string): Promise<Transaction | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/transactions/${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch transaction:', error);
+    }
+    return null;
+};
