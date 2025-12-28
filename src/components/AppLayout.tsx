@@ -27,6 +27,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 setUser(data.user);
                 setTenant(data.tenant);
             } else {
+                // Clear invalid tokens to prevent redirect loop
+                clearTokens();
                 router.push('/login');
             }
             setLoading(false);
