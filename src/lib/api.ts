@@ -684,3 +684,169 @@ export const upgradePlan = async (plan: string): Promise<boolean> => {
     }
     return false;
 };
+
+// Material types
+export interface RawMaterial {
+    id: string;
+    name: string;
+    unit: string;
+    unit_price: number;
+    stock_qty: number;
+    supplier: string;
+    created_at: string;
+}
+
+export interface ProductMaterial {
+    id: string;
+    product_id: string;
+    material_id: string;
+    quantity_used: number;
+    material: RawMaterial;
+}
+
+export interface CreateMaterialInput {
+    name: string;
+    unit: string;
+    unit_price: number;
+    stock_qty: number;
+    supplier: string;
+}
+
+// Material API
+export const getMaterials = async (): Promise<RawMaterial[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/materials');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch materials:', error);
+    }
+    return [];
+};
+
+export const createMaterial = async (input: CreateMaterialInput): Promise<RawMaterial | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/materials', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to create material:', error);
+    }
+    return null;
+};
+
+export const updateMaterial = async (id: string, input: CreateMaterialInput): Promise<RawMaterial | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/materials/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update material:', error);
+    }
+    return null;
+};
+
+export const deleteMaterial = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/materials/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete material:', error);
+    }
+    return false;
+};
+
+export const updateMaterialStock = async (id: string, adjustment: number, reason?: string): Promise<RawMaterial | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/materials/${id}/stock`, {
+            method: 'PUT',
+            body: JSON.stringify({ adjustment, reason }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update stock:', error);
+    }
+    return null;
+};
+
+export const getMaterialAlerts = async (): Promise<{ low_stock: RawMaterial[]; out_of_stock: RawMaterial[] }> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/materials/alerts');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch alerts:', error);
+    }
+    return { low_stock: [], out_of_stock: [] };
+};
+
+// Product-Material linking
+export const getProductMaterials = async (productId: string): Promise<{ materials: ProductMaterial[]; material_cost: number }> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials`);
+        if (response.ok) {
+            const data = await response.json();
+            return { materials: data.data || [], material_cost: data.material_cost || 0 };
+        }
+    } catch (error) {
+        console.error('Failed to fetch product materials:', error);
+    }
+    return { materials: [], material_cost: 0 };
+};
+
+export const linkMaterial = async (productId: string, materialId: string, quantityUsed: number): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials`, {
+            method: 'POST',
+            body: JSON.stringify({ product_id: productId, material_id: materialId, quantity_used: quantityUsed }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to link material:', error);
+    }
+    return false;
+};
+
+export const unlinkMaterial = async (productId: string, materialId: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${productId}/materials/${materialId}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to unlink material:', error);
+    }
+    return false;
+};
+
+export const calculateProductCost = async (productId: string): Promise<{ total_cost: number; breakdown: any[] }> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${productId}/cost`);
+        if (response.ok) {
+            const data = await response.json();
+            return { total_cost: data.total_cost || 0, breakdown: data.breakdown || [] };
+        }
+    } catch (error) {
+        console.error('Failed to calculate cost:', error);
+    }
+    return { total_cost: 0, breakdown: [] };
+};
