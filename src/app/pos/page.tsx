@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
+import Receipt from '@/components/Receipt';
 import { Product, getProducts, createTransaction, Transaction } from '@/lib/api';
 
 export default function POSPage() {
@@ -11,6 +12,7 @@ export default function POSPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [processing, setProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showReceipt, setShowReceipt] = useState(false);
     const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
     useEffect(() => {
@@ -74,7 +76,6 @@ export default function POSPage() {
             setLastTransaction(result);
             setShowSuccess(true);
             setCart([]);
-            // Reload products to update stock
             loadProducts();
         } else {
             alert('Gagal memproses transaksi');
@@ -218,8 +219,8 @@ export default function POSPage() {
                                 onClick={() => handleCheckout('cash')}
                                 disabled={cart.length === 0 || processing}
                                 className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
-                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        : 'bg-green-600 text-white hover:bg-green-700'
+                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    : 'bg-green-600 text-white hover:bg-green-700'
                                     }`}
                             >
                                 💵 Bayar Tunai
@@ -228,8 +229,8 @@ export default function POSPage() {
                                 onClick={() => handleCheckout('qris')}
                                 disabled={cart.length === 0 || processing}
                                 className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
-                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    : 'bg-purple-600 text-white hover:bg-purple-700'
                                     }`}
                             >
                                 📱 QRIS
@@ -262,7 +263,7 @@ export default function POSPage() {
                             <button
                                 onClick={() => {
                                     setShowSuccess(false);
-                                    // TODO: Print receipt
+                                    setShowReceipt(true);
                                 }}
                                 className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
                             >
@@ -271,6 +272,14 @@ export default function POSPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Receipt Modal */}
+            {showReceipt && lastTransaction && (
+                <Receipt
+                    transaction={lastTransaction}
+                    onClose={() => setShowReceipt(false)}
+                />
             )}
 
             {/* Processing Overlay */}
