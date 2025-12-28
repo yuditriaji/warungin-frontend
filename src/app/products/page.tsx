@@ -2,12 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Product, getProducts, createProduct, deleteProduct, CreateProductInput } from '@/lib/api';
+import {
+    Product,
+    getProducts,
+    createProduct,
+    deleteProduct,
+    CreateProductInput,
+    RawMaterial,
+    ProductMaterial,
+    getMaterials,
+    getProductMaterials,
+    linkMaterial,
+    unlinkMaterial,
+    calculateProductCost
+} from '@/lib/api';
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showMaterialModal, setShowMaterialModal] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [materials, setMaterials] = useState<RawMaterial[]>([]);
+    const [productMaterials, setProductMaterials] = useState<ProductMaterial[]>([]);
+    const [materialCost, setMaterialCost] = useState(0);
+    const [selectedMaterial, setSelectedMaterial] = useState('');
+    const [quantityUsed, setQuantityUsed] = useState(0);
+
     const [formData, setFormData] = useState<CreateProductInput>({
         name: '',
         price: 0,
@@ -19,6 +40,7 @@ export default function ProductsPage() {
 
     useEffect(() => {
         loadProducts();
+        loadMaterials();
     }, []);
 
     const loadProducts = async () => {
@@ -26,6 +48,11 @@ export default function ProductsPage() {
         const data = await getProducts();
         setProducts(data);
         setLoading(false);
+    };
+
+    const loadMaterials = async () => {
+        const data = await getMaterials();
+        setMaterials(data);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +76,38 @@ export default function ProductsPage() {
         }
     };
 
+    const openMaterialModal = async (product: Product) => {
+        setSelectedProduct(product);
+        setShowMaterialModal(true);
+        const { materials: pm, material_cost } = await getProductMaterials(product.id);
+        setProductMaterials(pm);
+        setMaterialCost(material_cost);
+    };
+
+    const handleLinkMaterial = async () => {
+        if (!selectedProduct || !selectedMaterial || quantityUsed <= 0) return;
+
+        const success = await linkMaterial(selectedProduct.id, selectedMaterial, quantityUsed);
+        if (success) {
+            const { materials: pm, material_cost } = await getProductMaterials(selectedProduct.id);
+            setProductMaterials(pm);
+            setMaterialCost(material_cost);
+            setSelectedMaterial('');
+            setQuantityUsed(0);
+        }
+    };
+
+    const handleUnlinkMaterial = async (materialId: string) => {
+        if (!selectedProduct) return;
+
+        const success = await unlinkMaterial(selectedProduct.id, materialId);
+        if (success) {
+            const { materials: pm, material_cost } = await getProductMaterials(selectedProduct.id);
+            setProductMaterials(pm);
+            setMaterialCost(material_cost);
+        }
+    };
+
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -59,7 +118,7 @@ export default function ProductsPage() {
 
     return (
         <AppLayout>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Produk</h1>
                     <p className="text-gray-500">Kelola produk yang dijual</p>
@@ -80,7 +139,6 @@ export default function ProductsPage() {
                     <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
                 </div>
             ) : products.length === 0 ? (
-                /* Empty State */
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,7 +155,6 @@ export default function ProductsPage() {
                     </button>
                 </div>
             ) : (
-                /* Product Grid */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {products.map((product) => (
                         <div key={product.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -112,11 +169,22 @@ export default function ProductsPage() {
                             </div>
                             <h3 className="font-medium text-gray-900 mb-1 truncate">{product.name}</h3>
                             <p className="text-lg font-bold text-purple-600 mb-2">{formatPrice(product.price)}</p>
-                            <div className="flex justify-between items-center text-sm text-gray-500">
+                            <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
                                 <span>Stok: {product.stock_qty}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => openMaterialModal(product)}
+                                    className="flex-1 py-2 px-3 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    Bahan
+                                </button>
                                 <button
                                     onClick={() => handleDelete(product.id)}
-                                    className="text-red-500 hover:text-red-700"
+                                    className="py-2 px-3 text-sm text-red-500 hover:bg-red-50 rounded-lg"
                                 >
                                     Hapus
                                 </button>
@@ -128,8 +196,8 @@ export default function ProductsPage() {
 
             {/* Add Product Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">Tambah Produk</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
@@ -139,7 +207,7 @@ export default function ProductsPage() {
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl"
                                     placeholder="Nasi Goreng"
                                 />
                             </div>
@@ -151,7 +219,7 @@ export default function ProductsPage() {
                                         required
                                         value={formData.price || ''}
                                         onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
                                         placeholder="15000"
                                     />
                                 </div>
@@ -161,7 +229,7 @@ export default function ProductsPage() {
                                         type="number"
                                         value={formData.cost || ''}
                                         onChange={(e) => setFormData({ ...formData, cost: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
                                         placeholder="10000"
                                     />
                                 </div>
@@ -173,7 +241,7 @@ export default function ProductsPage() {
                                         type="text"
                                         value={formData.sku || ''}
                                         onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
                                         placeholder="NG-001"
                                     />
                                 </div>
@@ -183,7 +251,7 @@ export default function ProductsPage() {
                                         type="number"
                                         value={formData.stock_qty || ''}
                                         onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
                                         placeholder="100"
                                     />
                                 </div>
@@ -205,6 +273,110 @@ export default function ProductsPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Material Linking Modal */}
+            {showMaterialModal && selectedProduct && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Bahan Baku</h2>
+                                <p className="text-gray-500">{selectedProduct.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setShowMaterialModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Cost Summary */}
+                        {productMaterials.length > 0 && (
+                            <div className="bg-purple-50 rounded-xl p-4 mb-4">
+                                <p className="text-sm text-purple-600">Total Biaya Bahan</p>
+                                <p className="text-2xl font-bold text-purple-700">{formatPrice(materialCost)}</p>
+                            </div>
+                        )}
+
+                        {/* Linked Materials */}
+                        {productMaterials.length > 0 && (
+                            <div className="mb-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-2">Bahan Terkait</h3>
+                                <div className="space-y-2">
+                                    {productMaterials.map((pm) => (
+                                        <div key={pm.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                            <div>
+                                                <p className="font-medium text-gray-900">{pm.material.name}</p>
+                                                <p className="text-sm text-gray-500">
+                                                    {pm.quantity_used} {pm.material.unit} × {formatPrice(pm.material.unit_price)} = {formatPrice(pm.quantity_used * pm.material.unit_price)}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleUnlinkMaterial(pm.material_id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Add Material */}
+                        <div className="border-t border-gray-100 pt-4">
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Tambah Bahan</h3>
+                            {materials.length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-4">
+                                    Belum ada bahan baku. <a href="/materials" className="text-purple-600">Tambah bahan baku →</a>
+                                </p>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <select
+                                        value={selectedMaterial}
+                                        onChange={(e) => setSelectedMaterial(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                    >
+                                        <option value="">Pilih bahan...</option>
+                                        {materials.map((m) => (
+                                            <option key={m.id} value={m.id}>
+                                                {m.name} ({m.unit})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={quantityUsed || ''}
+                                        onChange={(e) => setQuantityUsed(Number(e.target.value))}
+                                        placeholder="Jumlah"
+                                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                    />
+                                    <button
+                                        onClick={handleLinkMaterial}
+                                        disabled={!selectedMaterial || quantityUsed <= 0}
+                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowMaterialModal(false)}
+                            className="w-full mt-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200"
+                        >
+                            Selesai
+                        </button>
                     </div>
                 </div>
             )}
