@@ -9,7 +9,15 @@ interface SidebarItem {
     href: string;
     icon: React.ReactNode;
     roles?: string[];
+    minPlan?: string[]; // Plans that can access: ['gratis','pemula','bisnis','enterprise']
 }
+
+// Plan hierarchy for comparison
+const planOrder = ['gratis', 'pemula', 'bisnis', 'enterprise'];
+const hasPlanAccess = (userPlan: string, requiredPlans?: string[]): boolean => {
+    if (!requiredPlans) return true;
+    return requiredPlans.includes(userPlan);
+};
 
 const menuItems: SidebarItem[] = [
     {
@@ -48,6 +56,7 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
+        minPlan: ['pemula', 'bisnis', 'enterprise'],
     },
     {
         name: 'Bahan Baku',
@@ -58,6 +67,7 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
+        minPlan: ['pemula', 'bisnis', 'enterprise'],
     },
     {
         name: 'Transaksi',
@@ -77,6 +87,7 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
+        minPlan: ['pemula', 'bisnis', 'enterprise'],
     },
     {
         name: 'Pelanggan',
@@ -97,6 +108,7 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
+        minPlan: ['pemula', 'bisnis', 'enterprise'],
     },
     {
         name: 'Outlet',
@@ -107,6 +119,7 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner'],
+        minPlan: ['bisnis', 'enterprise'],
     },
     {
         name: 'Pengaturan',
@@ -123,18 +136,23 @@ const menuItems: SidebarItem[] = [
 
 interface SidebarProps {
     userRole?: string;
+    userPlan?: string;
     userName?: string;
     tenantName?: string;
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function Sidebar({ userRole = 'owner', userName = '', tenantName = '', isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', userName = '', tenantName = '', isOpen = false, onClose }: SidebarProps) {
     const pathname = usePathname();
 
-    const filteredItems = menuItems.filter(
-        (item) => !item.roles || item.roles.includes(userRole)
-    );
+    const filteredItems = menuItems.filter((item) => {
+        // Check role access
+        const hasRoleAccess = !item.roles || item.roles.includes(userRole);
+        // Check plan access
+        const hasPlanAccess = !item.minPlan || item.minPlan.includes(userPlan);
+        return hasRoleAccess && hasPlanAccess;
+    });
 
     return (
         <>

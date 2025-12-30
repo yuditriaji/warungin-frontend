@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
-import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet } from '@/lib/api';
+import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet, getSubscription } from '@/lib/api';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -15,6 +15,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [outlets, setOutlets] = useState<Outlet[]>([]);
     const [currentOutlet, setCurrentOutlet] = useState<Outlet | null>(null);
+    const [userPlan, setUserPlan] = useState<string>('gratis');
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [outletDropdownOpen, setOutletDropdownOpen] = useState(false);
@@ -30,6 +31,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
             if (data) {
                 setUser(data.user);
                 setTenant(data.tenant);
+
+                // Fetch subscription to get plan
+                const subData = await getSubscription();
+                if (subData?.subscription?.plan) {
+                    setUserPlan(subData.subscription.plan);
+                }
+
                 // Fetch outlets if user is manager or owner on Bisnis+ plan
                 if (data.user?.role === 'owner' || data.user?.role === 'manager') {
                     const outletList = await getOutlets();
@@ -71,6 +79,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {/* Sidebar */}
             <Sidebar
                 userRole={user?.role}
+                userPlan={userPlan}
                 userName={user?.name}
                 tenantName={tenant?.name}
                 isOpen={sidebarOpen}
