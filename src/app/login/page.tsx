@@ -27,11 +27,7 @@ export default function LoginPage() {
             <div className="w-full max-w-md p-8 mx-4">
                 {/* Logo & Title */}
                 <div className="text-center mb-8">
-                    <img
-                        src="/Horizontal_Logo-nobg.png"
-                        alt="Warungin"
-                        className="h-16 mx-auto mb-4"
-                    />
+                    <h1 className="text-4xl font-bold text-white mb-2">Warungin</h1>
                     <p className="text-purple-200">Aplikasi Kasir untuk UMKM</p>
                 </div>
 
