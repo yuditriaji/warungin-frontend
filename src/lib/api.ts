@@ -4,6 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://warungin-backend.onr
 export interface User {
     id: string;
     tenant_id: string;
+    outlet_id?: string;
     email: string;
     name: string;
     role: 'owner' | 'manager' | 'cashier';
@@ -865,3 +866,148 @@ export const calculateProductCost = async (productId: string): Promise<{ total_c
     return { total_cost: 0, breakdown: [] };
 };
 
+
+// Outlet types
+export interface Outlet {
+    id: string;
+    tenant_id: string;
+    name: string;
+    address: string;
+    phone: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface CreateOutletInput {
+    name: string;
+    address: string;
+    phone: string;
+}
+
+export interface OutletStats {
+    outlet_id: string;
+    today_sales: number;
+    today_tx_count: number;
+    month_sales: number;
+}
+
+// Staff types
+export interface Staff {
+    id: string;
+    name: string;
+    email: string;
+    role: 'owner' | 'manager' | 'cashier';
+    outlet_id?: string;
+    outlet?: Outlet;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface CreateStaffInput {
+    name: string;
+    email: string;
+    password: string;
+    role: 'manager' | 'cashier';
+    outlet_id?: string;
+}
+
+export interface ActivityLog {
+    id: string;
+    user: Staff;
+    action: string;
+    details: string;
+    created_at: string;
+}
+
+// Outlet API
+export const getOutlets = async (): Promise<Outlet[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/outlets');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch outlets:', error);
+    }
+    return [];
+};
+
+export const createOutlet = async (input: CreateOutletInput): Promise<Outlet | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/outlets', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        } else {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to create outlet');
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const switchOutlet = async (outletId: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/outlets/${outletId}/switch`, {
+            method: 'POST',
+        });
+        if (response.ok) {
+            // Reload page to reflect changes
+            window.location.reload();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to switch outlet:', error);
+    }
+    return false;
+};
+
+// Staff API
+export const getStaff = async (): Promise<Staff[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/staff');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch staff:', error);
+    }
+    return [];
+};
+
+export const createStaff = async (input: CreateStaffInput): Promise<Staff | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/staff', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        } else {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to create staff');
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getActivityLogs = async (): Promise<ActivityLog[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/staff/logs');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch logs:', error);
+    }
+    return [];
+};

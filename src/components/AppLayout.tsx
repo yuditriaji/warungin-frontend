@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
-import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant } from '@/lib/api';
+import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet } from '@/lib/api';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -13,8 +13,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [tenant, setTenant] = useState<Tenant | null>(null);
+    const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [currentOutlet, setCurrentOutlet] = useState<Outlet | null>(null);
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [outletDropdownOpen, setOutletDropdownOpen] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -27,6 +30,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
             if (data) {
                 setUser(data.user);
                 setTenant(data.tenant);
+                // Fetch outlets if user is manager or owner on Bisnis+ plan
+                if (data.user?.role === 'owner' || data.user?.role === 'manager') {
+                    const outletList = await getOutlets();
+                    setOutlets(outletList);
+                    // Set current outlet from user's outlet_id or first outlet
+                    if (data.user.outlet_id) {
+                        const current = outletList.find(o => o.id === data.user.outlet_id);
+                        setCurrentOutlet(current || outletList[0] || null);
+                    } else if (outletList.length > 0) {
+                        setCurrentOutlet(outletList[0]);
+                    }
+                }
             } else {
                 // Clear invalid tokens to prevent redirect loop
                 clearTokens();
@@ -76,7 +91,43 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
-                        {tenant && (
+
+                        {/* Outlet Switcher - Only show if multiple outlets */}
+                        {outlets.length > 1 && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setOutletDropdownOpen(!outletDropdownOpen)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                    <span className="text-sm font-medium hidden sm:block">{currentOutlet?.name || 'Pilih Outlet'}</span>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {outletDropdownOpen && (
+                                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                        {outlets.map((outlet) => (
+                                            <button
+                                                key={outlet.id}
+                                                onClick={() => {
+                                                    switchOutlet(outlet.id);
+                                                    setOutletDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${currentOutlet?.id === outlet.id ? 'text-purple-700 font-medium bg-purple-50' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                {outlet.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {tenant && outlets.length <= 1 && (
                             <span className="text-sm text-gray-500 hidden sm:block">
                                 {tenant.name}
                             </span>
