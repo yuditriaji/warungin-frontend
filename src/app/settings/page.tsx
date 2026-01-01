@@ -194,7 +194,7 @@ export default function SettingsPage() {
                                             value={qrisSettings.qris_image_url}
                                             onChange={(e) => setQrisSettings({ ...qrisSettings, qris_image_url: e.target.value })}
                                             placeholder="https://example.com/qris.png"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
                                         />
                                         <p className="text-xs text-gray-400 mt-1">
                                             Upload gambar QRIS Anda ke layanan hosting gambar dan paste URL-nya di sini
@@ -211,7 +211,7 @@ export default function SettingsPage() {
                                             value={qrisSettings.qris_label}
                                             onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })}
                                             placeholder="BCA QRIS, DANA, GoPay, dll"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
                                         />
                                     </div>
 
