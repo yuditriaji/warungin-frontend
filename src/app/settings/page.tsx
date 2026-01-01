@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings } from '@/lib/api';
+import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage } from '@/lib/api';
 
 export default function SettingsPage() {
     const [plans, setPlans] = useState<PlanInfo[]>([]);
@@ -18,6 +18,8 @@ export default function SettingsPage() {
         qris_label: ''
     });
     const [savingQris, setSavingQris] = useState(false);
+    const [uploadingQris, setUploadingQris] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadData();
@@ -44,6 +46,26 @@ export default function SettingsPage() {
         setSavingQris(true);
         await updateTenantSettings(qrisSettings);
         setSavingQris(false);
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file size (max 500KB)
+        if (file.size > 500 * 1024) {
+            alert('File terlalu besar. Maksimal 500KB.');
+            return;
+        }
+
+        setUploadingQris(true);
+        const result = await uploadQRISImage(file);
+        if (result) {
+            setQrisSettings(result);
+        } else {
+            alert('Gagal mengupload gambar QRIS');
+        }
+        setUploadingQris(false);
     };
 
     const handleUpgrade = async (planId: string) => {
@@ -184,21 +206,69 @@ export default function SettingsPage() {
 
                             {qrisSettings.qris_enabled && (
                                 <>
-                                    {/* QRIS Image URL */}
+                                    {/* QRIS Image Upload */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            URL Gambar QRIS
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Gambar QRIS
                                         </label>
+
+                                        {/* Hidden file input */}
                                         <input
-                                            type="text"
-                                            value={qrisSettings.qris_image_url}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, qris_image_url: e.target.value })}
-                                            placeholder="https://example.com/qris.png"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
                                         />
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Upload gambar QRIS Anda ke layanan hosting gambar dan paste URL-nya di sini
-                                        </p>
+
+                                        {qrisSettings.qris_image_url ? (
+                                            /* Show preview when image exists */
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                                                    <img
+                                                        src={qrisSettings.qris_image_url}
+                                                        alt="QRIS Preview"
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <button
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        disabled={uploadingQris}
+                                                        className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
+                                                    >
+                                                        {uploadingQris ? 'Mengupload...' : 'Ganti Gambar'}
+                                                    </button>
+                                                    <p className="text-xs text-gray-400">
+                                                        Maks. 500KB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Upload button when no image */
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={uploadingQris}
+                                                className="w-full py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-colors disabled:opacity-50"
+                                            >
+                                                <div className="flex flex-col items-center gap-2">
+                                                    {uploadingQris ? (
+                                                        <>
+                                                            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                                            <span className="text-sm text-gray-500">Mengupload...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <span className="text-sm text-gray-600 font-medium">Klik untuk upload gambar QRIS</span>
+                                                            <span className="text-xs text-gray-400">PNG, JPG (Maks. 500KB)</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* QRIS Label */}
@@ -214,26 +284,6 @@ export default function SettingsPage() {
                                             className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
                                         />
                                     </div>
-
-                                    {/* QRIS Preview */}
-                                    {qrisSettings.qris_image_url && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Preview QRIS
-                                            </label>
-                                            <div className="w-48 h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
-                                                <img
-                                                    src={qrisSettings.qris_image_url}
-                                                    alt="QRIS Preview"
-                                                    className="w-full h-full object-contain"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = '';
-                                                        (e.target as HTMLImageElement).alt = 'Gagal memuat gambar';
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             )}
 

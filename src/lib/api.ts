@@ -1048,3 +1048,29 @@ export const updateTenantSettings = async (settings: Partial<TenantSettings>): P
     }
     return null;
 };
+
+export const uploadQRISImage = async (file: File): Promise<TenantSettings | null> => {
+    try {
+        const formData = new FormData();
+        formData.append('qris_image', file);
+
+        const token = getAccessToken();
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://warungin-backend.onrender.com';
+
+        const response = await fetch(`${API_URL}/api/v1/tenant/qris-upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to upload QRIS image:', error);
+    }
+    return null;
+};
