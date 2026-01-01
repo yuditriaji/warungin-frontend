@@ -12,16 +12,9 @@ function AuthCallbackContent() {
     const [message, setMessage] = useState('Memproses login...');
 
     useEffect(() => {
-        // Check for tokens in cookies (set by backend)
-        const getCookie = (name: string) => {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop()?.split(';').shift();
-            return null;
-        };
-
-        const accessToken = getCookie('access_token');
-        const refreshToken = getCookie('refresh_token');
+        // Get tokens from URL query parameters (passed by backend OAuth callback)
+        const accessToken = searchParams.get('access_token');
+        const refreshToken = searchParams.get('refresh_token');
         const isNewUser = searchParams.get('is_new_user') === 'true';
 
         if (accessToken && refreshToken) {
@@ -31,9 +24,8 @@ function AuthCallbackContent() {
                 refresh_token: refreshToken,
             });
 
-            // Clear cookies after storing (optional, keeps localStorage as source of truth)
-            document.cookie = 'access_token=; Max-Age=0; path=/';
-            document.cookie = 'refresh_token=; Max-Age=0; path=/';
+            // Clear tokens from URL to prevent leakage in browser history
+            window.history.replaceState({}, document.title, '/auth/callback');
 
             setStatus('success');
 
