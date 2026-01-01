@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { storeTokens } from '@/lib/api';
 
@@ -10,14 +9,23 @@ function AuthCallbackContent() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Memproses login...');
+    const processedRef = useRef(false);
 
     useEffect(() => {
+        // Prevent double processing (React StrictMode or re-renders after URL clear)
+        if (processedRef.current) return;
+
         // Get tokens from URL query parameters (passed by backend OAuth callback)
         const accessToken = searchParams.get('access_token');
         const refreshToken = searchParams.get('refresh_token');
         const isNewUser = searchParams.get('is_new_user') === 'true';
 
+        // Also check localStorage in case URL was already cleared but tokens were stored
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
         if (accessToken && refreshToken) {
+            processedRef.current = true;
+
             // Store tokens in localStorage for API calls
             storeTokens({
                 access_token: accessToken,
@@ -40,7 +48,17 @@ function AuthCallbackContent() {
                     router.push('/dashboard');
                 }, 1000);
             }
+        } else if (storedToken) {
+            // Tokens already in localStorage (URL was cleared), redirect to dashboard
+            processedRef.current = true;
+            setStatus('success');
+            setMessage('Login berhasil! Mengalihkan ke dashboard...');
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 500);
         } else {
+            // No tokens found anywhere
+            processedRef.current = true;
             setStatus('error');
             setMessage('Login gagal. Silakan coba lagi.');
             setTimeout(() => {
