@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Receipt from '@/components/Receipt';
-import { Product, getProducts, createTransaction, Transaction } from '@/lib/api';
+import { Product, getProducts, createTransaction, Transaction, TenantSettings, getTenantSettings } from '@/lib/api';
 
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -16,8 +16,13 @@ export default function POSPage() {
     const [showCart, setShowCart] = useState(false);
     const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
+    // QRIS state
+    const [qrisSettings, setQrisSettings] = useState<TenantSettings | null>(null);
+    const [showQrisModal, setShowQrisModal] = useState(false);
+
     useEffect(() => {
         loadProducts();
+        loadQrisSettings();
     }, []);
 
     const loadProducts = async () => {
@@ -25,6 +30,11 @@ export default function POSPage() {
         const data = await getProducts();
         setProducts(data);
         setLoading(false);
+    };
+
+    const loadQrisSettings = async () => {
+        const settings = await getTenantSettings();
+        setQrisSettings(settings);
     };
 
     const addToCart = (product: Product) => {
@@ -88,6 +98,23 @@ export default function POSPage() {
         }
 
         setProcessing(false);
+    };
+
+    // Handle QRIS button click - show modal if QRIS is configured
+    const handleQrisClick = () => {
+        if (cart.length === 0) return;
+        if (!qrisSettings?.qris_enabled || !qrisSettings?.qris_image_url) {
+            alert('QRIS belum dikonfigurasi. Silakan atur di halaman Pengaturan.');
+            return;
+        }
+        setShowCart(false);
+        setShowQrisModal(true);
+    };
+
+    // Confirm QRIS payment (manual confirmation by cashier)
+    const handleConfirmQrisPayment = async () => {
+        setShowQrisModal(false);
+        await handleCheckout('qris');
     };
 
     const formatPrice = (price: number) => {
@@ -228,14 +255,14 @@ export default function POSPage() {
                                     💵 Bayar Tunai
                                 </button>
                                 <button
-                                    onClick={() => handleCheckout('qris')}
-                                    disabled={cart.length === 0 || processing}
-                                    className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
+                                    onClick={handleQrisClick}
+                                    disabled={cart.length === 0 || processing || !qrisSettings?.qris_enabled}
+                                    className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing || !qrisSettings?.qris_enabled
                                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                         : 'bg-purple-600 text-white hover:bg-purple-700'
                                         }`}
                                 >
-                                    📱 QRIS
+                                    📱 {qrisSettings?.qris_label || 'QRIS'}
                                 </button>
                             </div>
                         </div>
@@ -321,14 +348,14 @@ export default function POSPage() {
                                     💵 Bayar Tunai
                                 </button>
                                 <button
-                                    onClick={() => handleCheckout('qris')}
-                                    disabled={cart.length === 0}
-                                    className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 ${cart.length === 0
+                                    onClick={handleQrisClick}
+                                    disabled={cart.length === 0 || !qrisSettings?.qris_enabled}
+                                    className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 ${cart.length === 0 || !qrisSettings?.qris_enabled
                                         ? 'bg-gray-200 text-gray-500'
                                         : 'bg-purple-600 text-white'
                                         }`}
                                 >
-                                    📱 QRIS
+                                    📱 {qrisSettings?.qris_label || 'QRIS'}
                                 </button>
                             </div>
                         </div>
@@ -376,6 +403,51 @@ export default function POSPage() {
                     transaction={lastTransaction}
                     onClose={() => setShowReceipt(false)}
                 />
+            )}
+
+            {/* QRIS Payment Modal */}
+            {showQrisModal && qrisSettings && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full text-center">
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">
+                            Pembayaran {qrisSettings.qris_label || 'QRIS'}
+                        </h2>
+                        <p className="text-gray-500 mb-4">Scan QR Code untuk membayar</p>
+
+                        {/* Total Amount */}
+                        <p className="text-3xl font-bold text-purple-600 mb-4">
+                            {formatPrice(getTotal())}
+                        </p>
+
+                        {/* QRIS Image */}
+                        <div className="w-64 h-64 mx-auto mb-4 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                            <img
+                                src={qrisSettings.qris_image_url}
+                                alt="QRIS"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+
+                        <p className="text-sm text-gray-500 mb-6">
+                            Setelah pelanggan membayar, tekan tombol konfirmasi
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowQrisModal(false)}
+                                className="flex-1 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleConfirmQrisPayment}
+                                className="flex-1 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700"
+                            >
+                                ✓ Konfirmasi Pembayaran
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Processing Overlay */}

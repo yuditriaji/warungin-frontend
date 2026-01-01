@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { PlanInfo, SubscriptionUsage, getPlans, getSubscription, getUsage, upgradePlan } from '@/lib/api';
+import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings } from '@/lib/api';
 
 export default function SettingsPage() {
     const [plans, setPlans] = useState<PlanInfo[]>([]);
@@ -11,23 +11,39 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [upgrading, setUpgrading] = useState(false);
 
+    // QRIS Settings state
+    const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
+        qris_enabled: false,
+        qris_image_url: '',
+        qris_label: ''
+    });
+    const [savingQris, setSavingQris] = useState(false);
+
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
         setLoading(true);
-        const [plansData, subscriptionData, usageData] = await Promise.all([
+        const [plansData, subscriptionData, usageData, tenantSettingsData] = await Promise.all([
             getPlans(),
             getSubscription(),
             getUsage(),
+            getTenantSettings(),
         ]);
         setPlans(plansData);
         if (subscriptionData) {
             setCurrentPlan(subscriptionData.subscription.plan);
         }
         setUsage(usageData);
+        setQrisSettings(tenantSettingsData);
         setLoading(false);
+    };
+
+    const handleSaveQrisSettings = async () => {
+        setSavingQris(true);
+        await updateTenantSettings(qrisSettings);
+        setSavingQris(false);
     };
 
     const handleUpgrade = async (planId: string) => {
@@ -140,6 +156,98 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
+                    {/* QRIS Settings Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan QRIS</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Gunakan QRIS milik Anda sendiri untuk menerima pembayaran langsung ke rekening Anda.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">Aktifkan QRIS</p>
+                                    <p className="text-sm text-gray-500">Tampilkan opsi pembayaran QRIS di kasir</p>
+                                </div>
+                                <button
+                                    onClick={() => setQrisSettings({ ...qrisSettings, qris_enabled: !qrisSettings.qris_enabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.qris_enabled ? 'bg-purple-600' : 'bg-gray-200'
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.qris_enabled ? 'left-7' : 'left-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {qrisSettings.qris_enabled && (
+                                <>
+                                    {/* QRIS Image URL */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            URL Gambar QRIS
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={qrisSettings.qris_image_url}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, qris_image_url: e.target.value })}
+                                            placeholder="https://example.com/qris.png"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Upload gambar QRIS Anda ke layanan hosting gambar dan paste URL-nya di sini
+                                        </p>
+                                    </div>
+
+                                    {/* QRIS Label */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Label QRIS
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={qrisSettings.qris_label}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })}
+                                            placeholder="BCA QRIS, DANA, GoPay, dll"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    {/* QRIS Preview */}
+                                    {qrisSettings.qris_image_url && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Preview QRIS
+                                            </label>
+                                            <div className="w-48 h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                                                <img
+                                                    src={qrisSettings.qris_image_url}
+                                                    alt="QRIS Preview"
+                                                    className="w-full h-full object-contain"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = '';
+                                                        (e.target as HTMLImageElement).alt = 'Gagal memuat gambar';
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveQrisSettings}
+                                disabled={savingQris}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan QRIS'}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Plans Section */}
                     <h2 className="font-semibold text-gray-900 mb-4">Pilih Paket</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,8 +255,8 @@ export default function SettingsPage() {
                             <div
                                 key={plan.id}
                                 className={`bg-white rounded-xl border-2 p-6 transition-all ${currentPlan === plan.id
-                                        ? 'border-purple-500 ring-2 ring-purple-100'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-purple-500 ring-2 ring-purple-100'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <div className="mb-4">
@@ -176,8 +284,8 @@ export default function SettingsPage() {
                                     onClick={() => handleUpgrade(plan.id)}
                                     disabled={currentPlan === plan.id || upgrading}
                                     className={`w-full py-2 rounded-xl font-medium transition-colors ${currentPlan === plan.id
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-purple-600 text-white hover:bg-purple-700'
                                         }`}
                                 >
                                     {currentPlan === plan.id ? 'Paket Aktif' : 'Pilih Paket'}

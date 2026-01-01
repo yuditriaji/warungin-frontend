@@ -1011,3 +1011,40 @@ export const getActivityLogs = async (): Promise<ActivityLog[]> => {
     }
     return [];
 };
+
+// Tenant Settings types
+export interface TenantSettings {
+    qris_enabled: boolean;
+    qris_image_url: string;
+    qris_label: string;
+}
+
+// Tenant Settings API
+export const getTenantSettings = async (): Promise<TenantSettings> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/tenant/settings');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || { qris_enabled: false, qris_image_url: '', qris_label: '' };
+        }
+    } catch (error) {
+        console.error('Failed to fetch tenant settings:', error);
+    }
+    return { qris_enabled: false, qris_image_url: '', qris_label: '' };
+};
+
+export const updateTenantSettings = async (settings: Partial<TenantSettings>): Promise<TenantSettings | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/tenant/settings', {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update tenant settings:', error);
+    }
+    return null;
+};
