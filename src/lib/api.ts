@@ -698,6 +698,52 @@ export const upgradePlan = async (plan: string): Promise<boolean> => {
     return false;
 };
 
+// Payment invoice types
+export interface InvoiceResponse {
+    invoice_id: string;
+    invoice_url: string;
+    external_id: string;
+    amount: number;
+    status: string;
+    expires_at: string;
+    description: string;
+}
+
+// Create a payment invoice for subscription upgrade via Xendit
+export const createSubscriptionInvoice = async (plan: string, email: string): Promise<InvoiceResponse | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/payment/invoice', {
+            method: 'POST',
+            body: JSON.stringify({ plan, email }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+        const error = await response.json();
+        console.error('Invoice creation failed:', error);
+    } catch (error) {
+        console.error('Failed to create payment invoice:', error);
+    }
+    return null;
+};
+
+// Check invoice payment status
+export const getInvoiceStatus = async (invoiceId: string): Promise<{ status: string; paid_at?: string } | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/payment/invoice/${invoiceId}/status`, {
+            method: 'GET',
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to get invoice status:', error);
+    }
+    return null;
+};
+
 // Material types
 export interface RawMaterial {
     id: string;

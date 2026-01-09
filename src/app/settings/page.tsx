@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage } from '@/lib/api';
+import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage, createSubscriptionInvoice, getCurrentUser } from '@/lib/api';
 
 export default function SettingsPage() {
     const [plans, setPlans] = useState<PlanInfo[]>([]);
@@ -71,14 +71,45 @@ export default function SettingsPage() {
     const handleUpgrade = async (planId: string) => {
         if (planId === currentPlan) return;
 
-        if (!confirm(`Upgrade ke paket ${planId}?`)) return;
+        // Get plan info
+        const targetPlan = plans.find(p => p.id === planId);
+        if (!targetPlan) return;
+
+        // If it's a free plan or downgrade, just upgrade directly
+        if (targetPlan.price === 0) {
+            if (!confirm(`Pindah ke paket ${planId}? Fitur premium akan dinonaktifkan.`)) return;
+            setUpgrading(true);
+            const success = await upgradePlan(planId);
+            if (success) {
+                loadData();
+            }
+            setUpgrading(false);
+            return;
+        }
+
+        // For paid plans, create an invoice and redirect to payment
+        const confirmMsg = `Upgrade ke paket ${targetPlan.name} seharga ${formatPrice(targetPlan.price)}?\n\nAnda akan diarahkan ke halaman pembayaran.`;
+        if (!confirm(confirmMsg)) return;
 
         setUpgrading(true);
-        const success = await upgradePlan(planId);
-        if (success) {
-            loadData();
+
+        // Get user email
+        const userData = await getCurrentUser();
+        if (!userData) {
+            alert('Gagal mendapatkan informasi user');
+            setUpgrading(false);
+            return;
         }
-        setUpgrading(false);
+
+        // Create invoice
+        const invoice = await createSubscriptionInvoice(planId, userData.user.email);
+        if (invoice && invoice.invoice_url) {
+            // Redirect to Xendit payment page
+            window.location.href = invoice.invoice_url;
+        } else {
+            alert('Gagal membuat invoice pembayaran. Silakan coba lagi.');
+            setUpgrading(false);
+        }
     };
 
     const formatPrice = (price: number) => {
