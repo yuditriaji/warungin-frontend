@@ -23,6 +23,7 @@ export default function POSPage() {
     // Confirmation modal state
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string>('');
+    const [cashReceived, setCashReceived] = useState<number>(0);
 
     useEffect(() => {
         loadProducts();
@@ -133,6 +134,7 @@ export default function POSPage() {
     const openConfirmModal = (paymentMethod: string) => {
         if (cart.length === 0) return;
         setPendingPaymentMethod(paymentMethod);
+        setCashReceived(0); // Reset cash received
         setShowCart(false);
         setShowConfirmModal(true);
     };
@@ -513,6 +515,44 @@ export default function POSPage() {
                                 <span className="text-lg font-bold text-gray-900">Total</span>
                                 <span className="text-2xl font-bold text-purple-600">{formatPrice(getTotal())}</span>
                             </div>
+
+                            {/* Cash Payment Section */}
+                            {pendingPaymentMethod === 'cash' && (
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Uang Diterima</label>
+                                    <div className="flex gap-2 mb-3 flex-wrap">
+                                        {[getTotal(), Math.ceil(getTotal() / 10000) * 10000, Math.ceil(getTotal() / 50000) * 50000, 100000].filter((v, i, arr) => arr.indexOf(v) === i).slice(0, 4).map((amount) => (
+                                            <button
+                                                key={amount}
+                                                type="button"
+                                                onClick={() => setCashReceived(amount)}
+                                                className={`px-3 py-1 text-sm rounded-lg border ${cashReceived === amount ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                            >
+                                                {formatPrice(amount)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={cashReceived || ''}
+                                        onChange={(e) => setCashReceived(Number(e.target.value))}
+                                        className="w-full px-4 py-3 text-lg font-bold border border-gray-200 rounded-xl text-right"
+                                        placeholder="0"
+                                    />
+                                    {cashReceived >= getTotal() && (
+                                        <div className="mt-3 p-3 bg-green-50 rounded-xl flex justify-between items-center">
+                                            <span className="text-green-700 font-medium">Kembalian</span>
+                                            <span className="text-xl font-bold text-green-600">{formatPrice(cashReceived - getTotal())}</span>
+                                        </div>
+                                    )}
+                                    {cashReceived > 0 && cashReceived < getTotal() && (
+                                        <div className="mt-3 p-3 bg-red-50 rounded-xl flex justify-between items-center">
+                                            <span className="text-red-700 font-medium">Kurang</span>
+                                            <span className="text-xl font-bold text-red-600">{formatPrice(getTotal() - cashReceived)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Actions */}
