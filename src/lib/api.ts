@@ -777,6 +777,8 @@ export interface ProductMaterial {
     product_id: string;
     material_id: string;
     quantity_used: number;
+    used_unit: string;
+    conversion_rate: number;
     material: RawMaterial;
 }
 
@@ -890,11 +892,23 @@ export const getProductMaterials = async (productId: string): Promise<{ material
     return { materials: [], material_cost: 0 };
 };
 
-export const linkMaterial = async (productId: string, materialId: string, quantityUsed: number): Promise<boolean> => {
+export const linkMaterial = async (
+    productId: string,
+    materialId: string,
+    quantityUsed: number,
+    usedUnit?: string,
+    conversionRate?: number
+): Promise<boolean> => {
     try {
         const response = await fetchWithAuth(`/api/v1/product-materials`, {
             method: 'POST',
-            body: JSON.stringify({ product_id: productId, material_id: materialId, quantity_used: quantityUsed }),
+            body: JSON.stringify({
+                product_id: productId,
+                material_id: materialId,
+                quantity_used: quantityUsed,
+                used_unit: usedUnit || '',
+                conversion_rate: conversionRate || 1
+            }),
         });
         return response.ok;
     } catch (error) {
