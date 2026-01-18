@@ -221,7 +221,7 @@ export default function ProductsPage() {
                             <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
                                 <span>Stok: {product.stock_qty}</span>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                                 <button
                                     onClick={() => openEditModal(product)}
                                     className="py-2 px-3 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 flex items-center gap-1"
@@ -233,25 +233,28 @@ export default function ProductsPage() {
                                 </button>
                                 <button
                                     onClick={() => openMaterialModal(product)}
-                                    className="flex-1 py-2 px-3 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-1"
+                                    className="py-2 px-3 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center gap-1"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                     Bahan
                                 </button>
-                                {/* Toggle Switch */}
+                            </div>
+                            {/* Toggle Switch Row */}
+                            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                                <span className="text-xs text-gray-500">Status</span>
                                 <button
                                     onClick={() => handleToggleActive(product)}
-                                    className="flex items-center gap-2 py-2 px-3"
+                                    className="flex items-center gap-2"
                                     title={product.is_active ? 'Nonaktifkan produk' : 'Aktifkan produk'}
                                 >
-                                    <div className={`relative w-11 h-6 rounded-full transition-colors ${product.is_active ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${product.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
-                                    </div>
                                     <span className={`text-xs font-medium ${product.is_active ? 'text-green-600' : 'text-gray-400'}`}>
                                         {product.is_active ? 'Aktif' : 'Nonaktif'}
                                     </span>
+                                    <div className={`relative w-10 h-5 rounded-full transition-colors ${product.is_active ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                        <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${product.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </div>
                                 </button>
                             </div>
                         </div>
