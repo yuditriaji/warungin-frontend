@@ -20,6 +20,10 @@ export default function POSPage() {
     const [qrisSettings, setQrisSettings] = useState<TenantSettings | null>(null);
     const [showQrisModal, setShowQrisModal] = useState(false);
 
+    // Confirmation modal state
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string>('');
+
     useEffect(() => {
         loadProducts();
         loadQrisSettings();
@@ -123,6 +127,20 @@ export default function POSPage() {
             currency: 'IDR',
             minimumFractionDigits: 0,
         }).format(price);
+    };
+
+    // Open confirmation modal before checkout
+    const openConfirmModal = (paymentMethod: string) => {
+        if (cart.length === 0) return;
+        setPendingPaymentMethod(paymentMethod);
+        setShowCart(false);
+        setShowConfirmModal(true);
+    };
+
+    // Confirm and proceed with checkout
+    const confirmCheckout = async () => {
+        setShowConfirmModal(false);
+        await handleCheckout(pendingPaymentMethod);
     };
 
     const filteredProducts = products.filter(p =>
@@ -245,7 +263,7 @@ export default function POSPage() {
                             </div>
                             <div className="space-y-2">
                                 <button
-                                    onClick={() => handleCheckout('cash')}
+                                    onClick={() => openConfirmModal('cash')}
                                     disabled={cart.length === 0 || processing}
                                     className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${cart.length === 0 || processing
                                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
@@ -338,7 +356,7 @@ export default function POSPage() {
                                     <span className="text-2xl font-bold text-gray-900">{formatPrice(getTotal())}</span>
                                 </div>
                                 <button
-                                    onClick={() => handleCheckout('cash')}
+                                    onClick={() => openConfirmModal('cash')}
                                     disabled={cart.length === 0}
                                     className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 ${cart.length === 0
                                         ? 'bg-gray-200 text-gray-500'
@@ -444,6 +462,72 @@ export default function POSPage() {
                                 className="flex-1 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700"
                             >
                                 ✓ Konfirmasi Pembayaran
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transaction Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-auto">
+                        {/* Header */}
+                        <div className="p-4 border-b border-gray-100">
+                            <h2 className="text-xl font-bold text-gray-900 text-center">Konfirmasi Transaksi</h2>
+                        </div>
+
+                        {/* Order Items */}
+                        <div className="p-4 max-h-60 overflow-auto">
+                            <h3 className="text-sm font-medium text-gray-500 mb-3">Detail Pesanan</h3>
+                            <div className="space-y-3">
+                                {cart.map((item) => (
+                                    <div key={item.product.id} className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-900">{item.product.name}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {item.qty} x {formatPrice(item.product.price)}
+                                            </p>
+                                        </div>
+                                        <p className="font-medium text-gray-900">
+                                            {formatPrice(item.product.price * item.qty)}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-100">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-gray-600">Total Item</span>
+                                <span className="font-medium">{getTotalItems()} item</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-gray-600">Metode Bayar</span>
+                                <span className="font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm">
+                                    {pendingPaymentMethod === 'cash' ? '💵 Tunai' : '📱 QRIS'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                                <span className="text-lg font-bold text-gray-900">Total</span>
+                                <span className="text-2xl font-bold text-purple-600">{formatPrice(getTotal())}</span>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-4 flex gap-3">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 py-3 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmCheckout}
+                                className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 flex items-center justify-center gap-2"
+                            >
+                                ✓ Konfirmasi
                             </button>
                         </div>
                     </div>
