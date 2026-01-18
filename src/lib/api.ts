@@ -232,6 +232,22 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
     return false;
 };
 
+export const toggleProductActive = async (id: string, isActive: boolean): Promise<Product | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/products/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ is_active: isActive }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to toggle product active:', error);
+    }
+    return null;
+};
+
 // Transaction types
 export interface TransactionItem {
     id: string;

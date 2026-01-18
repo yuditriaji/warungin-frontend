@@ -8,6 +8,7 @@ import {
     createProduct,
     updateProduct,
     deleteProduct,
+    toggleProductActive,
     CreateProductInput,
     RawMaterial,
     ProductMaterial,
@@ -66,7 +67,7 @@ export default function ProductsPage() {
             // Update existing product
             result = await updateProduct(editingId, formData);
             if (result) {
-                setProducts(products.map(p => p.id === editingId ? result : p));
+                setProducts(products.map(p => p.id === editingId ? result! : p));
             }
         } else {
             // Create new product
@@ -108,6 +109,14 @@ export default function ProductsPage() {
             if (success) {
                 setProducts(products.filter(p => p.id !== id));
             }
+        }
+    };
+
+    const handleToggleActive = async (product: Product) => {
+        const newStatus = !product.is_active;
+        const result = await toggleProductActive(product.id, newStatus);
+        if (result) {
+            setProducts(products.map(p => p.id === product.id ? result : p));
         }
     };
 
@@ -192,8 +201,13 @@ export default function ProductsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {products.map((product) => (
-                        <div key={product.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
-                            <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                        <div key={product.id} className={`bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow ${!product.is_active ? 'opacity-60' : ''}`}>
+                            <div className="relative w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                                {!product.is_active && (
+                                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-gray-600 text-white text-xs rounded-full">
+                                        Nonaktif
+                                    </div>
+                                )}
                                 {product.image_url ? (
                                     <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                                 ) : (
@@ -227,10 +241,27 @@ export default function ProductsPage() {
                                     Bahan
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(product.id)}
-                                    className="py-2 px-3 text-sm text-red-500 hover:bg-red-50 rounded-lg"
+                                    onClick={() => handleToggleActive(product)}
+                                    className={`py-2 px-3 text-sm rounded-lg flex items-center gap-1 ${product.is_active
+                                            ? 'text-orange-500 hover:bg-orange-50'
+                                            : 'text-green-500 hover:bg-green-50'
+                                        }`}
                                 >
-                                    Hapus
+                                    {product.is_active ? (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                            </svg>
+                                            Nonaktif
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Aktifkan
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
