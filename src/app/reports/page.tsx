@@ -288,6 +288,105 @@ export default function ReportsPage() {
                         </div>
                     </div>
 
+                    {/* Visual Dashboard */}
+                    {productReport.length > 0 && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            {/* Top 5 Products Chart */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <h3 className="font-semibold text-gray-900 mb-4">🏆 Top 5 Produk</h3>
+                                <div className="space-y-4">
+                                    {productReport.slice(0, 5).map((product, index) => {
+                                        const maxSales = Math.max(...productReport.slice(0, 5).map(p => p.total_sales));
+                                        const percentage = maxSales > 0 ? (product.total_sales / maxSales) * 100 : 0;
+                                        const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-pink-500'];
+
+                                        return (
+                                            <div key={product.product_id}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-sm font-medium text-gray-700 truncate flex-1">
+                                                        {index + 1}. {product.product_name}
+                                                    </span>
+                                                    <span className="text-sm font-bold text-gray-900 ml-2">
+                                                        {formatPrice(product.total_sales)}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-3">
+                                                    <div
+                                                        className={`h-3 rounded-full ${colors[index]} transition-all duration-500`}
+                                                        style={{ width: `${percentage}%` }}
+                                                    />
+                                                </div>
+                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                    <span>{product.total_qty} terjual</span>
+                                                    <span className={product.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                                        Laba: {formatPrice(product.profit)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Profit Overview */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <h3 className="font-semibold text-gray-900 mb-4">📊 Ringkasan Keuntungan</h3>
+
+                                {/* Profit Gauge */}
+                                <div className="flex items-center justify-center mb-6">
+                                    <div className="relative w-40 h-40">
+                                        <svg className="w-40 h-40 transform -rotate-90">
+                                            <circle
+                                                cx="80"
+                                                cy="80"
+                                                r="60"
+                                                stroke="#e5e7eb"
+                                                strokeWidth="16"
+                                                fill="none"
+                                            />
+                                            <circle
+                                                cx="80"
+                                                cy="80"
+                                                r="60"
+                                                stroke={(salesReport?.gross_profit || 0) >= 0 ? "#22c55e" : "#ef4444"}
+                                                strokeWidth="16"
+                                                fill="none"
+                                                strokeDasharray={`${((salesReport?.gross_profit || 0) / (salesReport?.total_sales || 1)) * 377} 377`}
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-2xl font-bold text-gray-900">
+                                                {salesReport?.total_sales ? ((salesReport.gross_profit / salesReport.total_sales) * 100).toFixed(0) : 0}%
+                                            </span>
+                                            <span className="text-xs text-gray-500">Margin</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Breakdown */}
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                        <span className="text-sm text-blue-700">💰 Penjualan</span>
+                                        <span className="font-bold text-blue-900">{formatPrice(salesReport?.total_sales || 0)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                                        <span className="text-sm text-orange-700">📦 Modal</span>
+                                        <span className="font-bold text-orange-900">{formatPrice(salesReport?.total_cost || 0)}</span>
+                                    </div>
+                                    <div className={`flex justify-between items-center p-3 rounded-lg ${(salesReport?.gross_profit || 0) >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                                        <span className={`text-sm ${(salesReport?.gross_profit || 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                            {(salesReport?.gross_profit || 0) >= 0 ? '📈' : '📉'} Laba Kotor
+                                        </span>
+                                        <span className={`font-bold ${(salesReport?.gross_profit || 0) >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                                            {formatPrice(salesReport?.gross_profit || 0)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Product Sales Table */}
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                         <div className="p-4 border-b border-gray-200">
