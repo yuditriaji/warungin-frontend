@@ -1043,6 +1043,47 @@ export const switchOutlet = async (outletId: string): Promise<boolean> => {
     return false;
 };
 
+export const updateOutlet = async (id: string, input: CreateOutletInput): Promise<Outlet | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/outlets/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update outlet:', error);
+    }
+    return null;
+};
+
+export const deleteOutlet = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/outlets/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete outlet:', error);
+    }
+    return false;
+};
+
+export const getOutletStats = async (id: string): Promise<OutletStats | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/outlets/${id}/stats`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch outlet stats:', error);
+    }
+    return null;
+};
+
 // Staff API
 export const getStaff = async (): Promise<Staff[]> => {
     try {
@@ -1073,6 +1114,34 @@ export const createStaff = async (input: CreateStaffInput): Promise<Staff | null
     } catch (error) {
         throw error;
     }
+};
+
+export const updateStaff = async (id: string, input: Partial<CreateStaffInput> & { is_active?: boolean }): Promise<Staff | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/staff/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update staff:', error);
+    }
+    return null;
+};
+
+export const deleteStaff = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/staff/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete staff:', error);
+    }
+    return false;
 };
 
 export const getActivityLogs = async (): Promise<ActivityLog[]> => {
