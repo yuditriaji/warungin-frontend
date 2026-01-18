@@ -240,28 +240,18 @@ export default function ProductsPage() {
                                     </svg>
                                     Bahan
                                 </button>
+                                {/* Toggle Switch */}
                                 <button
                                     onClick={() => handleToggleActive(product)}
-                                    className={`py-2 px-3 text-sm rounded-lg flex items-center gap-1 ${product.is_active
-                                            ? 'text-orange-500 hover:bg-orange-50'
-                                            : 'text-green-500 hover:bg-green-50'
-                                        }`}
+                                    className="flex items-center gap-2 py-2 px-3"
+                                    title={product.is_active ? 'Nonaktifkan produk' : 'Aktifkan produk'}
                                 >
-                                    {product.is_active ? (
-                                        <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                            </svg>
-                                            Nonaktif
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Aktifkan
-                                        </>
-                                    )}
+                                    <div className={`relative w-11 h-6 rounded-full transition-colors ${product.is_active ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${product.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </div>
+                                    <span className={`text-xs font-medium ${product.is_active ? 'text-green-600' : 'text-gray-400'}`}>
+                                        {product.is_active ? 'Aktif' : 'Nonaktif'}
+                                    </span>
                                 </button>
                             </div>
                         </div>

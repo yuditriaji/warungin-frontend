@@ -27,7 +27,8 @@ body {
 
 /* Improve placeholder visibility */
 ::placeholder {
-  color: #6b7280; /* gray-500 - darker for better readability */
+  color: #6b7280;
+  /* gray-500 - darker for better readability */
   opacity: 1;
 }
 
@@ -35,4 +36,19 @@ input::placeholder,
 textarea::placeholder {
   color: #6b7280;
   opacity: 1;
+}
+
+/* Ensure text inputs have dark text */
+input,
+textarea,
+select {
+  color: #1f2937;
+  /* gray-800 - dark text for readability */
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  color: #111827;
+  /* gray-900 - even darker when focused */
 }
