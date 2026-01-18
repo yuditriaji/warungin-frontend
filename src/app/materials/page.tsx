@@ -24,6 +24,8 @@ export default function MaterialsPage() {
     const [alerts, setAlerts] = useState<{ low_stock: RawMaterial[]; out_of_stock: RawMaterial[] }>({ low_stock: [], out_of_stock: [] });
     const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [showImportExport, setShowImportExport] = useState(false);
+    const [importing, setImporting] = useState(false);
 
     const [formData, setFormData] = useState<CreateMaterialInput>({
         name: '',
@@ -121,6 +123,108 @@ export default function MaterialsPage() {
         return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Cukup</span>;
     };
 
+    // Export current stock to CSV
+    const exportStock = () => {
+        if (materials.length === 0) return;
+
+        const headers = ['Nama', 'Unit', 'Harga/Unit', 'Stok', 'Min. Stok', 'Supplier'];
+        const rows = materials.map(m => [
+            m.name,
+            m.unit,
+            m.unit_price.toString(),
+            m.stock_qty.toString(),
+            (m.min_stock_level || 10).toString(),
+            m.supplier || ''
+        ]);
+
+        const csvContent = [
+            'Data Stok Bahan Baku Warungin',
+            `Diekspor: ${new Date().toLocaleDateString('id-ID')}`,
+            '',
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `stok-bahan-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        setShowImportExport(false);
+    };
+
+    // Download import template
+    const downloadTemplate = () => {
+        const headers = ['Nama', 'Penyesuaian Stok'];
+        const example = [
+            'Beras,10',
+            'Minyak Goreng,-5',
+            'Gula,20'
+        ];
+
+        const csvContent = [
+            'Template Import Stok Warungin',
+            'Petunjuk: Isi nama bahan dan jumlah penyesuaian (+ untuk tambah, - untuk kurang)',
+            '',
+            headers.join(','),
+            ...example
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'template-import-stok.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Import stock from CSV
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImporting(true);
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+
+        // Skip header lines (first 4 lines)
+        const dataLines = lines.slice(4);
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const line of dataLines) {
+            const [name, adjustment] = line.split(',').map(s => s.trim());
+            if (!name || !adjustment) continue;
+
+            // Find material by name
+            const material = materials.find(m =>
+                m.name.toLowerCase() === name.toLowerCase()
+            );
+
+            if (material) {
+                const adjValue = parseFloat(adjustment);
+                if (!isNaN(adjValue) && adjValue !== 0) {
+                    const success = await updateMaterialStock(material.id, adjValue);
+                    if (success) successCount++;
+                    else errorCount++;
+                }
+            } else {
+                errorCount++;
+            }
+        }
+
+        setImporting(false);
+        setShowImportExport(false);
+        alert(`Import selesai!\n✓ Berhasil: ${successCount}\n✗ Gagal: ${errorCount}`);
+        loadData();
+
+        // Reset file input
+        e.target.value = '';
+    };
+
     return (
         <AppLayout>
             <div className="mb-6">
@@ -129,17 +233,73 @@ export default function MaterialsPage() {
                         <h1 className="text-2xl font-bold text-gray-900">Bahan Baku</h1>
                         <p className="text-gray-500">Kelola bahan baku dan inventori</p>
                     </div>
-                    <button
-                        onClick={() => {
-                            setEditingMaterial(null);
-                            setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, min_stock_level: 10, supplier: '' });
-                            setShowModal(true);
-                        }}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-purple-700"
-                    >
-                        + Tambah Bahan
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowImportExport(!showImportExport)}
+                            disabled={loading}
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium hover:bg-gray-50 flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Import/Export
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingMaterial(null);
+                                setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, min_stock_level: 10, supplier: '' });
+                                setShowModal(true);
+                            }}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-purple-700"
+                        >
+                            + Tambah Bahan
+                        </button>
+                    </div>
                 </div>
+
+                {/* Import/Export Panel */}
+                {showImportExport && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+                        <h3 className="font-medium text-gray-900 mb-3">Import/Export Stok</h3>
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                onClick={exportStock}
+                                disabled={materials.length === 0}
+                                className="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Export Data Stok
+                            </button>
+                            <button
+                                onClick={downloadTemplate}
+                                className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex items-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download Template
+                            </button>
+                            <label className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex items-center gap-2 cursor-pointer">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                {importing ? 'Mengimport...' : 'Import Stok'}
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleImport}
+                                    disabled={importing}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-3">
+                            💡 Download template terlebih dahulu, isi data, lalu upload untuk import stok massal
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Alert Summary */}
