@@ -6,6 +6,7 @@ import {
     Product,
     getProducts,
     createProduct,
+    updateProduct,
     deleteProduct,
     CreateProductInput,
     RawMaterial,
@@ -37,6 +38,7 @@ export default function ProductsPage() {
         stock_qty: 0,
     });
     const [saving, setSaving] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     useEffect(() => {
         loadProducts();
@@ -58,13 +60,46 @@ export default function ProductsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        const result = await createProduct(formData);
+
+        let result: Product | null = null;
+        if (editingId) {
+            // Update existing product
+            result = await updateProduct(editingId, formData);
+            if (result) {
+                setProducts(products.map(p => p.id === editingId ? result : p));
+            }
+        } else {
+            // Create new product
+            result = await createProduct(formData);
+            if (result) {
+                setProducts([...products, result]);
+            }
+        }
+
         if (result) {
-            setProducts([...products, result]);
             setShowModal(false);
+            setEditingId(null);
             setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0 });
         }
         setSaving(false);
+    };
+
+    const openEditModal = (product: Product) => {
+        setEditingId(product.id);
+        setFormData({
+            name: product.name,
+            price: product.price,
+            sku: product.sku || '',
+            cost: product.cost || 0,
+            stock_qty: product.stock_qty || 0,
+        });
+        setShowModal(true);
+    };
+
+    const openCreateModal = () => {
+        setEditingId(null);
+        setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0 });
+        setShowModal(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -124,7 +159,7 @@ export default function ProductsPage() {
                     <p className="text-gray-500">Kelola produk yang dijual</p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={openCreateModal}
                     className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +183,7 @@ export default function ProductsPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada produk</h3>
                     <p className="text-gray-500 mb-6">Mulai dengan menambahkan produk pertama Anda</p>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={openCreateModal}
                         className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
                     >
                         Tambah Produk Pertama
@@ -174,6 +209,15 @@ export default function ProductsPage() {
                             </div>
                             <div className="flex gap-2">
                                 <button
+                                    onClick={() => openEditModal(product)}
+                                    className="py-2 px-3 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 flex items-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                </button>
+                                <button
                                     onClick={() => openMaterialModal(product)}
                                     className="flex-1 py-2 px-3 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-1"
                                 >
@@ -198,7 +242,9 @@ export default function ProductsPage() {
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Tambah Produk</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">
+                            {editingId ? 'Edit Produk' : 'Tambah Produk'}
+                        </h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Produk *</label>
