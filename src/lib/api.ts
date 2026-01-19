@@ -238,8 +238,8 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
 
 export const toggleProductActive = async (id: string, isActive: boolean): Promise<Product | null> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/products/${id}`, {
-            method: 'PUT',
+        const response = await fetchWithAuth(`/api/v1/products/${id}/toggle`, {
+            method: 'PATCH',
             body: JSON.stringify({ is_active: isActive }),
         });
         if (response.ok) {
