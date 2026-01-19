@@ -34,12 +34,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
                 // Fetch subscription to get plan
                 const subData = await getSubscription();
-                if (subData?.subscription?.plan) {
-                    setUserPlan(subData.subscription.plan);
-                }
+                const plan = subData?.subscription?.plan || 'gratis';
+                setUserPlan(plan);
 
-                // Fetch outlets if user is manager or owner on Bisnis+ plan
-                if (data.user?.role === 'owner' || data.user?.role === 'manager') {
+                // Check if plan supports outlets (Bisnis or Enterprise only)
+                const isBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
+
+                // Fetch outlets only if user is manager/owner AND on Bisnis+ plan
+                if (isBisnisPlan && (data.user?.role === 'owner' || data.user?.role === 'manager')) {
                     const outletList = await getOutlets();
                     setOutlets(outletList);
                     // Set current outlet from user's outlet_id or first outlet
