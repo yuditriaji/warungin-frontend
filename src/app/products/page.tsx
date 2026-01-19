@@ -314,14 +314,15 @@ export default function ProductsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modal</label>
-                                    <input
-                                        type="number"
-                                        value={formData.cost || ''}
-                                        onChange={(e) => setFormData({ ...formData, cost: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                        placeholder="10000"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modal (Biaya Bahan)</label>
+                                    <div className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-600">
+                                        {editingId ? (
+                                            <span>Otomatis dari bahan terkait</span>
+                                        ) : (
+                                            <span>Tambahkan bahan setelah membuat produk</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">Biaya modal dihitung otomatis dari bahan yang ditautkan</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
