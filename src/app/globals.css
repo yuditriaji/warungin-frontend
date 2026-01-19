@@ -42,13 +42,30 @@ textarea::placeholder {
 input,
 textarea,
 select {
-  color: #1f2937;
+  color: #1f2937 !important;
   /* gray-800 - dark text for readability */
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  color: #111827;
+  color: #111827 !important;
   /* gray-900 - even darker when focused */
+}
+
+/* Force minimum contrast for text readability */
+/* Override light gray text colors to be more readable */
+.text-gray-300 {
+  color: #6b7280 !important;
+  /* bump to gray-500 */
+}
+
+.text-gray-400 {
+  color: #6b7280 !important;
+  /* bump to gray-500 */
+}
+
+/* Ensure select dropdown text is visible */
+select option {
+  color: #1f2937;
 }

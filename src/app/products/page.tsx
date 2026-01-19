@@ -30,6 +30,8 @@ export default function ProductsPage() {
     const [materialCost, setMaterialCost] = useState(0);
     const [selectedMaterial, setSelectedMaterial] = useState('');
     const [quantityUsed, setQuantityUsed] = useState(0);
+    const [usedUnit, setUsedUnit] = useState('');
+    const [conversionRate, setConversionRate] = useState(1);
 
     const [formData, setFormData] = useState<CreateProductInput>({
         name: '',
@@ -131,13 +133,21 @@ export default function ProductsPage() {
     const handleLinkMaterial = async () => {
         if (!selectedProduct || !selectedMaterial || quantityUsed <= 0) return;
 
-        const success = await linkMaterial(selectedProduct.id, selectedMaterial, quantityUsed);
+        const success = await linkMaterial(
+            selectedProduct.id,
+            selectedMaterial,
+            quantityUsed,
+            usedUnit || undefined,
+            conversionRate > 0 ? conversionRate : 1
+        );
         if (success) {
             const { materials: pm, material_cost } = await getProductMaterials(selectedProduct.id);
             setProductMaterials(pm);
             setMaterialCost(material_cost);
             setSelectedMaterial('');
             setQuantityUsed(0);
+            setUsedUnit('');
+            setConversionRate(1);
         }
     };
 
@@ -383,8 +393,14 @@ export default function ProductsPage() {
                                         <div key={pm.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                             <div>
                                                 <p className="font-medium text-gray-900">{pm.material.name}</p>
-                                                <p className="text-sm text-gray-500">
-                                                    {pm.quantity_used} {pm.material.unit} × {formatPrice(pm.material.unit_price)} = {formatPrice(pm.quantity_used * pm.material.unit_price)}
+                                                <p className="text-sm text-gray-600">
+                                                    {pm.quantity_used} {pm.used_unit || pm.material.unit}
+                                                    {pm.conversion_rate && pm.conversion_rate !== 1 && (
+                                                        <span className="text-gray-500"> (×{pm.conversion_rate})</span>
+                                                    )}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    = {formatPrice(pm.quantity_used * pm.material.unit_price * (pm.conversion_rate || 1))}
                                                 </p>
                                             </div>
                                             <button
@@ -409,33 +425,77 @@ export default function ProductsPage() {
                                     Belum ada bahan baku. <a href="/materials" className="text-purple-600">Tambah bahan baku →</a>
                                 </p>
                             ) : (
-                                <div className="flex gap-2">
+                                <div className="space-y-3">
+                                    {/* Material Selection */}
                                     <select
                                         value={selectedMaterial}
-                                        onChange={(e) => setSelectedMaterial(e.target.value)}
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                        onChange={(e) => {
+                                            setSelectedMaterial(e.target.value);
+                                            const mat = materials.find(m => m.id === e.target.value);
+                                            if (mat) setUsedUnit(mat.unit);
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                                     >
                                         <option value="">Pilih bahan...</option>
                                         {materials.map((m) => (
                                             <option key={m.id} value={m.id}>
-                                                {m.name} ({m.unit})
+                                                {m.name} ({m.unit} @ {new Intl.NumberFormat('id-ID').format(m.unit_price)})
                                             </option>
                                         ))}
                                     </select>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={quantityUsed || ''}
-                                        onChange={(e) => setQuantityUsed(Number(e.target.value))}
-                                        placeholder="Jumlah"
-                                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                                    />
+
+                                    {/* Quantity and Unit Row */}
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={quantityUsed || ''}
+                                            onChange={(e) => setQuantityUsed(Number(e.target.value))}
+                                            placeholder="Jumlah"
+                                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                        />
+                                        <select
+                                            value={usedUnit}
+                                            onChange={(e) => setUsedUnit(e.target.value)}
+                                            className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                        >
+                                            <option value="">Unit</option>
+                                            <option value="sdm">sdm (sendok makan)</option>
+                                            <option value="sdt">sdt (sendok teh)</option>
+                                            <option value="ml">ml</option>
+                                            <option value="L">Liter</option>
+                                            <option value="gram">gram</option>
+                                            <option value="kg">kg</option>
+                                            <option value="pcs">pcs</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Conversion Rate (if different unit) */}
+                                    {selectedMaterial && usedUnit && (
+                                        <div className="bg-blue-50 p-3 rounded-lg">
+                                            <label className="block text-xs text-blue-700 mb-1">
+                                                Konversi: 1 {usedUnit} = ? {materials.find(m => m.id === selectedMaterial)?.unit || 'unit'}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.001"
+                                                value={conversionRate}
+                                                onChange={(e) => setConversionRate(Number(e.target.value))}
+                                                placeholder="Contoh: 0.015 (15ml per sdm)"
+                                                className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white"
+                                            />
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                Contoh: 1 sdm ≈ 0.015 L (15ml), 1 gram = 0.001 kg
+                                            </p>
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={handleLinkMaterial}
                                         disabled={!selectedMaterial || quantityUsed <= 0}
-                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        +
+                                        + Tambah Bahan
                                     </button>
                                 </div>
                             )}
