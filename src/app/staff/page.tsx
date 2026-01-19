@@ -10,7 +10,8 @@ import {
     createStaff,
     updateStaff,
     deleteStaff,
-    getOutlets
+    getOutlets,
+    getSubscription
 } from '@/lib/api';
 
 export default function StaffPage() {
@@ -20,6 +21,7 @@ export default function StaffPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [error, setError] = useState('');
+    const [isBisnisPlan, setIsBisnisPlan] = useState(false);
     const [formData, setFormData] = useState<CreateStaffInput>({
         name: '',
         email: '',
@@ -34,9 +36,17 @@ export default function StaffPage() {
 
     const loadData = async () => {
         setLoading(true);
+
+        // Check plan first
+        const subData = await getSubscription();
+        const plan = subData?.subscription?.plan || 'gratis';
+        const hasBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
+        setIsBisnisPlan(hasBisnisPlan);
+
+        // Fetch staff and outlets (only if Bisnis+)
         const [staffData, outletsData] = await Promise.all([
             getStaff(),
-            getOutlets()
+            hasBisnisPlan ? getOutlets() : Promise.resolve([])
         ]);
         setStaff(staffData);
         setOutlets(outletsData);
@@ -252,7 +262,7 @@ export default function StaffPage() {
                                     <option value="manager">Manager</option>
                                 </select>
                             </div>
-                            {outlets.length > 0 && (
+                            {isBisnisPlan && outlets.length > 0 && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Outlet</label>
                                     <select
