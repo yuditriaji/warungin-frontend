@@ -172,12 +172,16 @@ export interface CreateProductInput {
     stock_qty?: number;
     category_id?: string;
     image_url?: string;
+    outlet_id?: string;
 }
 
 // Product API functions
-export const getProducts = async (): Promise<Product[]> => {
+export const getProducts = async (outletId?: string): Promise<Product[]> => {
     try {
-        const response = await fetchWithAuth('/api/v1/products');
+        const url = outletId
+            ? `/api/v1/products?outlet_id=${outletId}`
+            : '/api/v1/products';
+        const response = await fetchWithAuth(url);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];

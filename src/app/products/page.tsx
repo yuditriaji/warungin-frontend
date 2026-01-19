@@ -16,7 +16,8 @@ import {
     getProductMaterials,
     linkMaterial,
     unlinkMaterial,
-    calculateProductCost
+    calculateProductCost,
+    getCurrentUser
 } from '@/lib/api';
 
 export default function ProductsPage() {
@@ -32,6 +33,7 @@ export default function ProductsPage() {
     const [quantityUsed, setQuantityUsed] = useState(0);
     const [usedUnit, setUsedUnit] = useState('');
     const [conversionRate, setConversionRate] = useState(1);
+    const [currentOutletId, setCurrentOutletId] = useState<string | undefined>(undefined);
 
     const [formData, setFormData] = useState<CreateProductInput>({
         name: '',
@@ -44,19 +46,27 @@ export default function ProductsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
 
     useEffect(() => {
-        loadProducts();
-        loadMaterials();
+        initPage();
     }, []);
 
-    const loadProducts = async () => {
+    const initPage = async () => {
+        // Get current user's outlet
+        const userData = await getCurrentUser();
+        const outletId = userData?.user?.outlet_id || undefined;
+        setCurrentOutletId(outletId);
+        await loadProducts(outletId);
+        await loadMaterials(outletId);
+    };
+
+    const loadProducts = async (outletId?: string) => {
         setLoading(true);
-        const data = await getProducts();
+        const data = await getProducts(outletId);
         setProducts(data);
         setLoading(false);
     };
 
-    const loadMaterials = async () => {
-        const data = await getMaterials();
+    const loadMaterials = async (outletId?: string) => {
+        const data = await getMaterials(outletId);
         setMaterials(data);
     };
 
@@ -72,8 +82,8 @@ export default function ProductsPage() {
                 setProducts(products.map(p => p.id === editingId ? result! : p));
             }
         } else {
-            // Create new product
-            result = await createProduct(formData);
+            // Create new product with outlet_id
+            result = await createProduct({ ...formData, outlet_id: currentOutletId });
             if (result) {
                 setProducts([...products, result]);
             }
