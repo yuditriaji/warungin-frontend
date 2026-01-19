@@ -769,6 +769,8 @@ export interface RawMaterial {
     stock_qty: number;
     min_stock_level: number;
     supplier: string;
+    outlet_id?: string;
+    outlet?: Outlet;
     created_at: string;
 }
 
@@ -789,12 +791,16 @@ export interface CreateMaterialInput {
     stock_qty: number;
     min_stock_level: number;
     supplier: string;
+    outlet_id?: string;
 }
 
 // Material API
-export const getMaterials = async (): Promise<RawMaterial[]> => {
+export const getMaterials = async (outletId?: string): Promise<RawMaterial[]> => {
     try {
-        const response = await fetchWithAuth('/api/v1/materials');
+        const url = outletId
+            ? `/api/v1/materials?outlet_id=${outletId}`
+            : '/api/v1/materials';
+        const response = await fetchWithAuth(url);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];
