@@ -55,6 +55,11 @@ select:focus {
 
 /* Force minimum contrast for text readability */
 /* Override light gray text colors to be more readable */
+.text-gray-200 {
+  color: #9ca3af !important;
+  /* bump to gray-400 */
+}
+
 .text-gray-300 {
   color: #6b7280 !important;
   /* bump to gray-500 */
@@ -65,7 +70,39 @@ select:focus {
   /* bump to gray-500 */
 }
 
+.text-gray-500 {
+  color: #4b5563 !important;
+  /* bump to gray-600 for better contrast */
+}
+
 /* Ensure select dropdown text is visible */
 select option {
   color: #1f2937;
+}
+
+/* Fix table and list text */
+td,
+th,
+li {
+  color: inherit;
+}
+
+/* Ensure disabled elements are still readable */
+input:disabled,
+textarea:disabled,
+select:disabled,
+button:disabled {
+  color: #6b7280 !important;
+  opacity: 0.8;
+}
+
+/* Fix any text-muted or similar classes */
+.text-muted,
+.text-secondary {
+  color: #6b7280 !important;
+}
+
+/* Ensure labels are readable */
+label {
+  color: #374151;
 }
