@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
+import * as XLSX from 'xlsx';
 import {
     RawMaterial,
     getMaterials,
@@ -134,105 +135,108 @@ export default function MaterialsPage() {
         return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Cukup</span>;
     };
 
-    // Export current stock to CSV
+    // Export current stock to Excel
     const exportStock = () => {
         if (materials.length === 0) return;
 
-        const headers = ['Nama', 'Unit', 'Harga/Unit', 'Stok', 'Min. Stok', 'Supplier'];
-        const rows = materials.map(m => [
-            m.name,
-            m.unit,
-            m.unit_price.toString(),
-            m.stock_qty.toString(),
-            (m.min_stock_level || 10).toString(),
-            m.supplier || ''
-        ]);
+        const data = materials.map(m => ({
+            'Nama': m.name,
+            'Unit': m.unit,
+            'Harga/Unit': m.unit_price,
+            'Stok': m.stock_qty,
+            'Min. Stok': m.min_stock_level || 10,
+            'Supplier': m.supplier || ''
+        }));
 
-        const csvContent = [
-            'Data Stok Bahan Baku Warungin',
-            `Diekspor: ${new Date().toLocaleDateString('id-ID')}`,
-            '',
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Stok Bahan');
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `stok-bahan-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
+        // Set column widths
+        ws['!cols'] = [
+            { wch: 25 }, { wch: 10 }, { wch: 15 },
+            { wch: 10 }, { wch: 12 }, { wch: 20 }
+        ];
+
+        XLSX.writeFile(wb, `stok-bahan-${new Date().toISOString().split('T')[0]}.xlsx`);
         setShowImportExport(false);
     };
 
-    // Download import template
+    // Download import template as Excel
     const downloadTemplate = () => {
-        const headers = ['Nama', 'Penyesuaian Stok'];
-        const example = [
-            'Beras,10',
-            'Minyak Goreng,-5',
-            'Gula,20'
+        const data = [
+            { 'Nama': 'Beras', 'Penyesuaian Stok': 10 },
+            { 'Nama': 'Minyak Goreng', 'Penyesuaian Stok': -5 },
+            { 'Nama': 'Gula', 'Penyesuaian Stok': 20 }
         ];
 
-        const csvContent = [
-            'Template Import Stok Warungin',
-            'Petunjuk: Isi nama bahan dan jumlah penyesuaian (+ untuk tambah, - untuk kurang)',
-            '',
-            headers.join(','),
-            ...example
-        ].join('\n');
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Import Stok');
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'template-import-stok.csv';
-        link.click();
-        URL.revokeObjectURL(url);
+        // Add instructions as first sheet
+        const instructions = [
+            { 'Petunjuk': 'Isi nama bahan dan jumlah penyesuaian' },
+            { 'Petunjuk': 'Gunakan angka positif untuk menambah stok' },
+            { 'Petunjuk': 'Gunakan angka negatif untuk mengurangi stok' }
+        ];
+        const wsInstructions = XLSX.utils.json_to_sheet(instructions);
+        XLSX.utils.book_append_sheet(wb, wsInstructions, 'Petunjuk');
+
+        ws['!cols'] = [{ wch: 25 }, { wch: 18 }];
+        XLSX.writeFile(wb, 'template-import-stok.xlsx');
     };
 
-    // Import stock from CSV
+    // Import stock from Excel
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setImporting(true);
-        const text = await file.text();
-        const lines = text.split('\n').filter(line => line.trim());
 
-        // Skip header lines (first 4 lines)
-        const dataLines = lines.slice(4);
-        let successCount = 0;
-        let errorCount = 0;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const data = new Uint8Array(event.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
 
-        for (const line of dataLines) {
-            const [name, adjustment] = line.split(',').map(s => s.trim());
-            if (!name || !adjustment) continue;
+            // Get first sheet (Import Stok)
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<{ Nama: string; 'Penyesuaian Stok': number }>(worksheet);
 
-            // Find material by name
-            const material = materials.find(m =>
-                m.name.toLowerCase() === name.toLowerCase()
-            );
+            let successCount = 0;
+            let errorCount = 0;
 
-            if (material) {
-                const adjValue = parseFloat(adjustment);
-                if (!isNaN(adjValue) && adjValue !== 0) {
-                    const success = await updateMaterialStock(material.id, adjValue);
-                    if (success) successCount++;
-                    else errorCount++;
+            for (const row of jsonData) {
+                const name = row['Nama']?.toString().trim();
+                const adjustment = row['Penyesuaian Stok'];
+
+                if (!name || adjustment === undefined) continue;
+
+                // Find material by name
+                const material = materials.find(m =>
+                    m.name.toLowerCase() === name.toLowerCase()
+                );
+
+                if (material) {
+                    const adjValue = Number(adjustment);
+                    if (!isNaN(adjValue) && adjValue !== 0) {
+                        const success = await updateMaterialStock(material.id, adjValue);
+                        if (success) successCount++;
+                        else errorCount++;
+                    }
+                } else {
+                    errorCount++;
                 }
-            } else {
-                errorCount++;
             }
-        }
 
-        setImporting(false);
-        setShowImportExport(false);
-        alert(`Import selesai!\n✓ Berhasil: ${successCount}\n✗ Gagal: ${errorCount}`);
-        loadData(currentOutletId);
+            setImporting(false);
+            setShowImportExport(false);
+            alert(`Import selesai!\n✓ Berhasil: ${successCount}\n✗ Gagal: ${errorCount}`);
+            loadData(currentOutletId);
+        };
 
-        // Reset file input
+        reader.readAsArrayBuffer(file);
         e.target.value = '';
     };
 
@@ -299,7 +303,7 @@ export default function MaterialsPage() {
                                 {importing ? 'Mengimport...' : 'Import Stok'}
                                 <input
                                     type="file"
-                                    accept=".csv"
+                                    accept=".xlsx,.xls"
                                     onChange={handleImport}
                                     disabled={importing}
                                     className="hidden"
