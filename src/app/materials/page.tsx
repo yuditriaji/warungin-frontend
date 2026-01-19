@@ -10,7 +10,8 @@ import {
     deleteMaterial,
     updateMaterialStock,
     getMaterialAlerts,
-    CreateMaterialInput
+    CreateMaterialInput,
+    getCurrentUser
 } from '@/lib/api';
 
 export default function MaterialsPage() {
@@ -26,6 +27,7 @@ export default function MaterialsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showImportExport, setShowImportExport] = useState(false);
     const [importing, setImporting] = useState(false);
+    const [currentOutletId, setCurrentOutletId] = useState<string | undefined>(undefined);
 
     const [formData, setFormData] = useState<CreateMaterialInput>({
         name: '',
@@ -37,13 +39,21 @@ export default function MaterialsPage() {
     });
 
     useEffect(() => {
-        loadData();
+        initPage();
     }, []);
 
-    const loadData = async () => {
+    const initPage = async () => {
+        // Get current user's outlet
+        const userData = await getCurrentUser();
+        const outletId = userData?.user?.outlet_id || undefined;
+        setCurrentOutletId(outletId);
+        await loadData(outletId);
+    };
+
+    const loadData = async (outletId?: string) => {
         setLoading(true);
         const [materialsData, alertsData] = await Promise.all([
-            getMaterials(),
+            getMaterials(outletId), // Filter by outlet
             getMaterialAlerts(),
         ]);
         setMaterials(materialsData);
@@ -64,12 +74,13 @@ export default function MaterialsPage() {
         if (editingMaterial) {
             await updateMaterial(editingMaterial.id, formData);
         } else {
-            await createMaterial(formData);
+            // Include outlet_id when creating
+            await createMaterial({ ...formData, outlet_id: currentOutletId });
         }
         setShowModal(false);
         setEditingMaterial(null);
         setFormData({ name: '', unit: 'kg', unit_price: 0, stock_qty: 0, min_stock_level: 10, supplier: '' });
-        loadData();
+        loadData(currentOutletId);
     };
 
     const handleEdit = (material: RawMaterial) => {
@@ -88,7 +99,7 @@ export default function MaterialsPage() {
     const handleDelete = async (id: string) => {
         if (confirm('Hapus bahan baku ini?')) {
             await deleteMaterial(id);
-            loadData();
+            loadData(currentOutletId);
         }
     };
 
@@ -98,7 +109,7 @@ export default function MaterialsPage() {
             setShowStockModal(false);
             setStockMaterial(null);
             setStockAdjustment(0);
-            loadData();
+            loadData(currentOutletId);
         }
     };
 
@@ -219,7 +230,7 @@ export default function MaterialsPage() {
         setImporting(false);
         setShowImportExport(false);
         alert(`Import selesai!\n✓ Berhasil: ${successCount}\n✗ Gagal: ${errorCount}`);
-        loadData();
+        loadData(currentOutletId);
 
         // Reset file input
         e.target.value = '';
