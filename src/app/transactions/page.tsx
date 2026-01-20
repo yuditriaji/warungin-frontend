@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Transaction, getTransactions, voidTransaction, getCurrentUser } from '@/lib/api';
+import { Transaction, Outlet, getTransactions, voidTransaction, getCurrentUser, getOutlets, getSubscription } from '@/lib/api';
 
 const VOID_REASONS = [
     'Pelanggan batal',
@@ -24,19 +24,42 @@ export default function TransactionsPage() {
     const [voidReasonOther, setVoidReasonOther] = useState('');
     const [voidLoading, setVoidLoading] = useState(false);
     const [error, setError] = useState('');
+    const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [isBisnisPlan, setIsBisnisPlan] = useState(false);
 
     useEffect(() => {
-        loadData();
+        initPage();
     }, []);
 
-    const loadData = async () => {
+    useEffect(() => {
+        loadTransactions();
+    }, [selectedOutlet]);
+
+    const initPage = async () => {
         setLoading(true);
-        const [txData, userData] = await Promise.all([
-            getTransactions(),
+        const [userData, subData] = await Promise.all([
             getCurrentUser(),
+            getSubscription(),
         ]);
-        setTransactions(txData);
         setUserRole(userData?.user?.role || 'cashier');
+
+        const plan = subData?.subscription?.plan || 'gratis';
+        const hasBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
+        setIsBisnisPlan(hasBisnisPlan);
+
+        if (hasBisnisPlan) {
+            const outletList = await getOutlets();
+            setOutlets(outletList);
+        }
+
+        await loadTransactions();
+    };
+
+    const loadTransactions = async () => {
+        const outletId = selectedOutlet || undefined;
+        const txData = await getTransactions(outletId);
+        setTransactions(txData);
         setLoading(false);
     };
 
@@ -108,7 +131,7 @@ export default function TransactionsPage() {
 
         if (result.success) {
             setShowVoidModal(false);
-            loadData();
+            loadTransactions();
         } else {
             setError(result.message);
         }
@@ -123,11 +146,25 @@ export default function TransactionsPage() {
 
     return (
         <AppLayout>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Riwayat Transaksi</h1>
                     <p className="text-gray-500">Lihat semua transaksi penjualan</p>
                 </div>
+
+                {/* Outlet Filter - Only for Bisnis+ */}
+                {isBisnisPlan && outlets.length > 0 && (
+                    <select
+                        value={selectedOutlet}
+                        onChange={(e) => setSelectedOutlet(e.target.value)}
+                        className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-gray-700"
+                    >
+                        <option value="">📍 Semua Outlet</option>
+                        {outlets.map((outlet) => (
+                            <option key={outlet.id} value={outlet.id}>📍 {outlet.name}</option>
+                        ))}
+                    </select>
+                )}
             </div>
 
             {loading ? (

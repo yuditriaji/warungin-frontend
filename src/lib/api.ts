@@ -289,9 +289,13 @@ export interface CreateTransactionInput {
 }
 
 // Transaction API functions
-export const getTransactions = async (): Promise<Transaction[]> => {
+export const getTransactions = async (outletId?: string): Promise<Transaction[]> => {
     try {
-        const response = await fetchWithAuth('/api/v1/transactions');
+        let url = '/api/v1/transactions';
+        if (outletId) {
+            url += `?outlet_id=${outletId}`;
+        }
+        const response = await fetchWithAuth(url);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];
