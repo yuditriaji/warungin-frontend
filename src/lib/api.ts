@@ -348,6 +348,42 @@ export const voidTransaction = async (id: string, reason: string): Promise<{ suc
     }
 };
 
+// Audit Log types
+export interface TransactionAuditLog {
+    id: string;
+    tenant_id: string;
+    transaction_id: string;
+    transaction?: Transaction;
+    action: string;
+    reason: string;
+    old_values: string;
+    new_values: string;
+    user_id: string;
+    user?: { id: string; name: string; email: string; role: string };
+    manager_id?: string;
+    ip_address: string;
+    created_at: string;
+}
+
+export const getAuditLogs = async (startDate?: string, endDate?: string): Promise<TransactionAuditLog[]> => {
+    try {
+        let url = '/api/v1/audit-logs';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetchWithAuth(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+    }
+    return [];
+};
+
 // Dashboard types
 export interface DashboardStats {
     today_sales: number;

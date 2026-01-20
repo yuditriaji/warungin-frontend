@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Transaction, getTransactions, voidTransaction, getMe } from '@/lib/api';
+import { Transaction, getTransactions, voidTransaction, getCurrentUser } from '@/lib/api';
 
 const VOID_REASONS = [
     'Pelanggan batal',
@@ -33,7 +33,7 @@ export default function TransactionsPage() {
         setLoading(true);
         const [txData, userData] = await Promise.all([
             getTransactions(),
-            getMe(),
+            getCurrentUser(),
         ]);
         setTransactions(txData);
         setUserRole(userData?.user?.role || 'cashier');
