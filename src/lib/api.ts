@@ -331,6 +331,23 @@ export const getTransaction = async (id: string): Promise<Transaction | null> =>
     return null;
 };
 
+export const voidTransaction = async (id: string, reason: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/transactions/${id}/void`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return { success: true, message: data.message || 'Transaksi berhasil dibatalkan' };
+        }
+        return { success: false, message: data.error || 'Gagal membatalkan transaksi' };
+    } catch (error) {
+        console.error('Failed to void transaction:', error);
+        return { success: false, message: 'Gagal membatalkan transaksi' };
+    }
+};
+
 // Dashboard types
 export interface DashboardStats {
     today_sales: number;
