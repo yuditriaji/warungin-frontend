@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { SalesReport, ProductSalesReport, getSalesReport, getProductSalesReport } from '@/lib/api';
+import { SalesReport, ProductSalesReport, Outlet, getSalesReport, getProductSalesReport, getOutlets, getSubscription } from '@/lib/api';
 
 export default function ReportsPage() {
     const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
@@ -12,10 +12,30 @@ export default function ReportsPage() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [isBisnisPlan, setIsBisnisPlan] = useState(false);
+
+    useEffect(() => {
+        initPage();
+    }, []);
 
     useEffect(() => {
         loadReports();
-    }, [dateRange, startDate, endDate]);
+    }, [dateRange, startDate, endDate, selectedOutlet]);
+
+    const initPage = async () => {
+        // Check plan and load outlets for Bisnis+ users
+        const subData = await getSubscription();
+        const plan = subData?.subscription?.plan || 'gratis';
+        const hasBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
+        setIsBisnisPlan(hasBisnisPlan);
+
+        if (hasBisnisPlan) {
+            const outletList = await getOutlets();
+            setOutlets(outletList);
+        }
+    };
 
     const getDateRange = () => {
         const now = new Date();
@@ -50,10 +70,11 @@ export default function ReportsPage() {
     const loadReports = async () => {
         setLoading(true);
         const { start, end } = getDateRange();
+        const outletId = selectedOutlet || undefined;
 
         const [salesData, productsData] = await Promise.all([
-            getSalesReport(start, end),
-            getProductSalesReport(start, end),
+            getSalesReport(start, end, outletId),
+            getProductSalesReport(start, end, outletId),
         ]);
 
         setSalesReport(salesData);
@@ -217,7 +238,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Date Range Selector */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6 items-center">
                 {(['today', 'week', 'month', 'custom'] as const).map((range) => (
                     <button
                         key={range}
@@ -250,6 +271,20 @@ export default function ReportsPage() {
                             className="px-3 py-2 border border-gray-200 rounded-xl"
                         />
                     </div>
+                )}
+
+                {/* Outlet Filter - Only for Bisnis+ */}
+                {isBisnisPlan && outlets.length > 0 && (
+                    <select
+                        value={selectedOutlet}
+                        onChange={(e) => setSelectedOutlet(e.target.value)}
+                        className="ml-auto px-4 py-2 border border-gray-200 rounded-xl bg-white text-gray-700"
+                    >
+                        <option value="">📍 Semua Outlet</option>
+                        {outlets.map((outlet) => (
+                            <option key={outlet.id} value={outlet.id}>📍 {outlet.name}</option>
+                        ))}
+                    </select>
                 )}
             </div>
 

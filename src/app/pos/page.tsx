@@ -33,7 +33,8 @@ export default function POSPage() {
     const loadProducts = async () => {
         setLoading(true);
         const data = await getProducts();
-        setProducts(data);
+        // Only show active products in POS
+        setProducts(data.filter(p => p.is_active));
         setLoading(false);
     };
 

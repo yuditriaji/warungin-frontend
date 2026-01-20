@@ -414,12 +414,13 @@ export interface ProductSalesReport {
 }
 
 // Reports API
-export const getSalesReport = async (startDate?: string, endDate?: string): Promise<SalesReport | null> => {
+export const getSalesReport = async (startDate?: string, endDate?: string, outletId?: string): Promise<SalesReport | null> => {
     try {
         let url = '/api/v1/reports/sales';
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
+        if (outletId) params.append('outlet_id', outletId);
         if (params.toString()) url += '?' + params.toString();
 
         const response = await fetchWithAuth(url);
@@ -433,12 +434,13 @@ export const getSalesReport = async (startDate?: string, endDate?: string): Prom
     return null;
 };
 
-export const getProductSalesReport = async (startDate?: string, endDate?: string): Promise<ProductSalesReport[]> => {
+export const getProductSalesReport = async (startDate?: string, endDate?: string, outletId?: string): Promise<ProductSalesReport[]> => {
     try {
         let url = '/api/v1/reports/products';
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
+        if (outletId) params.append('outlet_id', outletId);
         if (params.toString()) url += '?' + params.toString();
 
         const response = await fetchWithAuth(url);
