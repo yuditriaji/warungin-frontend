@@ -56,23 +56,23 @@ select:focus {
 /* Force minimum contrast for text readability */
 /* Override light gray text colors to be more readable */
 .text-gray-200 {
-  color: #9ca3af !important;
-  /* bump to gray-400 */
+  color: #6b7280 !important;
+  /* bump to gray-500 */
 }
 
 .text-gray-300 {
-  color: #6b7280 !important;
-  /* bump to gray-500 */
+  color: #4b5563 !important;
+  /* bump to gray-600 */
 }
 
 .text-gray-400 {
-  color: #6b7280 !important;
-  /* bump to gray-500 */
+  color: #4b5563 !important;
+  /* bump to gray-600 for much better contrast */
 }
 
 .text-gray-500 {
-  color: #4b5563 !important;
-  /* bump to gray-600 for better contrast */
+  color: #374151 !important;
+  /* bump to gray-700 for excellent contrast */
 }
 
 /* Ensure select dropdown text is visible */
