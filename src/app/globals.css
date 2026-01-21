@@ -28,7 +28,6 @@ body {
 /* Improve placeholder visibility */
 ::placeholder {
   color: #6b7280;
-  /* gray-500 - darker for better readability */
   opacity: 1;
 }
 
@@ -43,36 +42,12 @@ input,
 textarea,
 select {
   color: #1f2937 !important;
-  /* gray-800 - dark text for readability */
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   color: #111827 !important;
-  /* gray-900 - even darker when focused */
-}
-
-/* Force minimum contrast for text readability */
-/* Override light gray text colors to be more readable */
-.text-gray-200 {
-  color: #6b7280 !important;
-  /* bump to gray-500 */
-}
-
-.text-gray-300 {
-  color: #4b5563 !important;
-  /* bump to gray-600 */
-}
-
-.text-gray-400 {
-  color: #4b5563 !important;
-  /* bump to gray-600 for much better contrast */
-}
-
-.text-gray-500 {
-  color: #374151 !important;
-  /* bump to gray-700 for excellent contrast */
 }
 
 /* Ensure select dropdown text is visible */
@@ -80,11 +55,47 @@ select option {
   color: #1f2937;
 }
 
-/* Fix table and list text */
+/* Ensure labels are readable */
+label {
+  color: #374151;
+}
+
+/* Override Tailwind's light gray text colors using @layer for proper specificity */
+@layer utilities {
+  .text-gray-200 {
+    color: #6b7280 !important;
+  }
+
+  .text-gray-300 {
+    color: #4b5563 !important;
+  }
+
+  .text-gray-400 {
+    color: #4b5563 !important;
+  }
+
+  .text-gray-500 {
+    color: #374151 !important;
+  }
+
+  .text-gray-600 {
+    color: #1f2937 !important;
+  }
+}
+
+/* Fallback: Direct element styling for tables */
 td,
-th,
-li {
-  color: inherit;
+th {
+  color: #374151;
+}
+
+/* Fix table cells that might have light text */
+table td {
+  color: #374151 !important;
+}
+
+table th {
+  color: #374151 !important;
 }
 
 /* Ensure disabled elements are still readable */
@@ -94,15 +105,4 @@ select:disabled,
 button:disabled {
   color: #6b7280 !important;
   opacity: 0.8;
-}
-
-/* Fix any text-muted or similar classes */
-.text-muted,
-.text-secondary {
-  color: #6b7280 !important;
-}
-
-/* Ensure labels are readable */
-label {
-  color: #374151;
 }
