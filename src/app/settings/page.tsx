@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage, createSubscriptionInvoice, getCurrentUser } from '@/lib/api';
 
 export default function SettingsPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const [plans, setPlans] = useState<PlanInfo[]>([]);
     const [currentPlan, setCurrentPlan] = useState<string>('gratis');
     const [usage, setUsage] = useState<SubscriptionUsage | null>(null);
     const [loading, setLoading] = useState(true);
     const [upgrading, setUpgrading] = useState(false);
+    const [paymentMessage, setPaymentMessage] = useState<string>('');
 
     // QRIS Settings state
     const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
@@ -23,7 +27,18 @@ export default function SettingsPage() {
 
     useEffect(() => {
         loadData();
-    }, []);
+
+        // Check for payment return status
+        const paymentStatus = searchParams.get('payment');
+        if (paymentStatus === 'success') {
+            setPaymentMessage('✅ Pembayaran berhasil! Paket Anda telah diaktifkan.');
+            // Clean up URL
+            router.replace('/settings', { scroll: false });
+        } else if (paymentStatus === 'failed') {
+            setPaymentMessage('❌ Pembayaran dibatalkan atau gagal. Silakan coba lagi.');
+            router.replace('/settings', { scroll: false });
+        }
+    }, [searchParams, router]);
 
     const loadData = async () => {
         setLoading(true);
@@ -75,22 +90,48 @@ export default function SettingsPage() {
         const targetPlan = plans.find(p => p.id === planId);
         if (!targetPlan) return;
 
-        // Simple confirmation for testing (Xendit integration disabled)
-        const confirmMsg = targetPlan.price === 0
-            ? `Pindah ke paket ${targetPlan.name}? Fitur premium akan dinonaktifkan.`
-            : `Upgrade ke paket ${targetPlan.name} seharga ${formatPrice(targetPlan.price)}?`;
+        // For free plans (downgrade), just switch directly
+        if (targetPlan.price === 0) {
+            const confirmMsg = `Pindah ke paket ${targetPlan.name}? Fitur premium akan dinonaktifkan.`;
+            if (!confirm(confirmMsg)) return;
 
+            setUpgrading(true);
+            const success = await upgradePlan(planId);
+            if (success) {
+                alert(`Berhasil pindah ke paket ${targetPlan.name}!`);
+                loadData();
+            } else {
+                alert('Gagal mengubah paket. Silakan coba lagi.');
+            }
+            setUpgrading(false);
+            return;
+        }
+
+        // For paid plans, create Xendit invoice and redirect to payment
+        const confirmMsg = `Upgrade ke paket ${targetPlan.name} seharga ${formatPrice(targetPlan.price)}? Anda akan diarahkan ke halaman pembayaran.`;
         if (!confirm(confirmMsg)) return;
 
         setUpgrading(true);
-        const success = await upgradePlan(planId);
-        if (success) {
-            alert(`Berhasil upgrade ke paket ${targetPlan.name}!`);
-            loadData();
-        } else {
-            alert('Gagal upgrade paket. Silakan coba lagi.');
+
+        // Get user email for invoice
+        const userData = await getCurrentUser();
+        const email = userData?.user?.email || '';
+
+        if (!email) {
+            alert('Email tidak ditemukan. Silakan login ulang.');
+            setUpgrading(false);
+            return;
         }
-        setUpgrading(false);
+
+        const invoice = await createSubscriptionInvoice(planId, email);
+
+        if (invoice && invoice.invoice_url) {
+            // Redirect to Xendit payment page
+            window.location.href = invoice.invoice_url;
+        } else {
+            alert('Gagal membuat invoice. Silakan coba lagi.');
+            setUpgrading(false);
+        }
     };
 
     const formatPrice = (price: number) => {
@@ -119,6 +160,21 @@ export default function SettingsPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Pengaturan</h1>
                 <p className="text-gray-500">Kelola langganan dan penggunaan</p>
             </div>
+
+            {/* Payment Status Message */}
+            {paymentMessage && (
+                <div className={`mb-6 p-4 rounded-xl border ${paymentMessage.includes('✅') ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                    <div className="flex justify-between items-center">
+                        <span className="font-medium">{paymentMessage}</span>
+                        <button
+                            onClick={() => setPaymentMessage('')}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex items-center justify-center py-12">
