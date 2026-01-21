@@ -15,6 +15,8 @@ function SettingsContent() {
     const [loading, setLoading] = useState(true);
     const [upgrading, setUpgrading] = useState(false);
     const [paymentMessage, setPaymentMessage] = useState<string>('');
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<PlanInfo | null>(null);
 
     // QRIS Settings state
     const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
@@ -91,26 +93,31 @@ function SettingsContent() {
         const targetPlan = plans.find(p => p.id === planId);
         if (!targetPlan) return;
 
-        // For free plans (downgrade), just switch directly
-        if (targetPlan.price === 0) {
-            const confirmMsg = `Pindah ke paket ${targetPlan.name}? Fitur premium akan dinonaktifkan.`;
-            if (!confirm(confirmMsg)) return;
+        // Show upgrade modal for confirmation
+        setSelectedPlan(targetPlan);
+        setShowUpgradeModal(true);
+    };
 
+    const confirmUpgrade = async () => {
+        if (!selectedPlan) return;
+
+        setShowUpgradeModal(false);
+
+        // For free plans (downgrade), just switch directly
+        if (selectedPlan.price === 0) {
             setUpgrading(true);
-            const success = await upgradePlan(planId);
+            const success = await upgradePlan(selectedPlan.id);
             if (success) {
-                alert(`Berhasil pindah ke paket ${targetPlan.name}!`);
+                setPaymentMessage(`✅ Berhasil pindah ke paket ${selectedPlan.name}!`);
                 loadData();
             } else {
-                alert('Gagal mengubah paket. Silakan coba lagi.');
+                setPaymentMessage('❌ Gagal mengubah paket. Silakan coba lagi.');
             }
             setUpgrading(false);
             return;
         }
 
         // For paid plans, create Xendit invoice and redirect to payment
-        const confirmMsg = `Upgrade ke paket ${targetPlan.name} seharga ${formatPrice(targetPlan.price)}? Anda akan diarahkan ke halaman pembayaran.`;
-        if (!confirm(confirmMsg)) return;
 
         setUpgrading(true);
 
@@ -119,18 +126,18 @@ function SettingsContent() {
         const email = userData?.user?.email || '';
 
         if (!email) {
-            alert('Email tidak ditemukan. Silakan login ulang.');
+            setPaymentMessage('❌ Email tidak ditemukan. Silakan login ulang.');
             setUpgrading(false);
             return;
         }
 
-        const invoice = await createSubscriptionInvoice(planId, email);
+        const invoice = await createSubscriptionInvoice(selectedPlan.id, email);
 
         if (invoice && invoice.invoice_url) {
             // Redirect to Xendit payment page
             window.location.href = invoice.invoice_url;
         } else {
-            alert('Gagal membuat invoice. Silakan coba lagi.');
+            setPaymentMessage('❌ Gagal membuat invoice. Silakan coba lagi.');
             setUpgrading(false);
         }
     };
@@ -308,7 +315,7 @@ function SettingsContent() {
                                                     >
                                                         {uploadingQris ? 'Mengupload...' : 'Ganti Gambar'}
                                                     </button>
-                                                    <p className="text-xs text-gray-400">
+                                                    <p className="text-xs text-gray-600">
                                                         Maks. 500KB
                                                     </p>
                                                 </div>
@@ -332,7 +339,7 @@ function SettingsContent() {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                             </svg>
                                                             <span className="text-sm text-gray-600 font-medium">Klik untuk upload gambar QRIS</span>
-                                                            <span className="text-xs text-gray-400">PNG, JPG (Maks. 500KB)</span>
+                                                            <span className="text-xs text-gray-600">PNG, JPG (Maks. 500KB)</span>
                                                         </>
                                                     )}
                                                 </div>
@@ -413,6 +420,70 @@ function SettingsContent() {
                         ))}
                     </div>
                 </>
+            )}
+
+            {/* Upgrade Confirmation Modal */}
+            {showUpgradeModal && selectedPlan && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">
+                            {selectedPlan.price === 0 ? 'Konfirmasi Pindah Paket' : 'Konfirmasi Upgrade'}
+                        </h3>
+
+                        {selectedPlan.price === 0 ? (
+                            <p className="text-gray-700 mb-6">
+                                Anda akan pindah ke paket <span className="font-semibold">{selectedPlan.name}</span>.
+                                Fitur premium akan dinonaktifkan.
+                            </p>
+                        ) : (
+                            <div className="mb-6">
+                                <p className="text-gray-700 mb-4">
+                                    Upgrade ke paket <span className="font-semibold text-purple-600">{selectedPlan.name}</span>
+                                </p>
+
+                                {/* Price Breakdown */}
+                                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                    <div className="flex justify-between text-gray-700">
+                                        <span>Harga Paket</span>
+                                        <span>{formatPrice(selectedPlan.price).replace('/bulan', '')}</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-700">
+                                        <span>PPN 11%</span>
+                                        <span>{formatPrice(selectedPlan.price * 0.11).replace('/bulan', '')}</span>
+                                    </div>
+                                    <div className="border-t border-gray-200 pt-2 mt-2">
+                                        <div className="flex justify-between font-bold text-gray-900">
+                                            <span>Total</span>
+                                            <span className="text-purple-600">
+                                                {formatPrice(selectedPlan.price * 1.11)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p className="text-sm text-gray-600 mt-3">
+                                    Anda akan diarahkan ke halaman pembayaran.
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmUpgrade}
+                                disabled={upgrading}
+                                className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium disabled:opacity-50"
+                            >
+                                {upgrading ? 'Memproses...' : selectedPlan.price === 0 ? 'Konfirmasi' : 'Bayar Sekarang'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </AppLayout>
     );
