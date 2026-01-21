@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage, createSubscriptionInvoice, getCurrentUser } from '@/lib/api';
 
-export default function SettingsPage() {
+// Separate component that uses useSearchParams
+function SettingsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [plans, setPlans] = useState<PlanInfo[]>([]);
@@ -414,5 +415,20 @@ export default function SettingsPage() {
                 </>
             )}
         </AppLayout>
+    );
+}
+
+// Wrapper component with Suspense for useSearchParams
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={
+            <AppLayout>
+                <div className="flex items-center justify-center py-12">
+                    <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                </div>
+            </AppLayout>
+        }>
+            <SettingsContent />
+        </Suspense>
     );
 }
