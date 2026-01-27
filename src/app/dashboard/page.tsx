@@ -59,7 +59,7 @@ export default function DashboardPage() {
             {/* Welcome Card */}
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white mb-8">
                 <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
-                <p className="text-purple-100">Ringkasan bisnis Anda hari ini</p>
+                <p className="text-purple-100">Analitik bisnis Anda dalam satu pandangan</p>
             </div>
 
             {/* Stats Grid */}
@@ -135,8 +135,8 @@ export default function DashboardPage() {
                                     <div className="text-right">
                                         <p className="font-semibold text-gray-900">{formatPrice(tx.total)}</p>
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${tx.payment_method === 'cash'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-purple-100 text-purple-700'
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-purple-100 text-purple-700'
                                             }`}>
                                             {tx.payment_method === 'cash' ? 'Tunai' : tx.payment_method.toUpperCase()}
                                         </span>

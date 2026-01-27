@@ -137,6 +137,46 @@ export const getCurrentUser = async (): Promise<{ user: User; tenant: Tenant } |
     return null;
 };
 
+// Update tenant profile (for onboarding)
+export interface UpdateTenantInput {
+    name?: string;
+    business_type?: string;
+    phone?: string;
+    address?: string;
+}
+
+export const updateTenantProfile = async (input: UpdateTenantInput): Promise<Tenant | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/tenant/profile', {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to update tenant profile:', error);
+    }
+    return null;
+};
+
+// Business type options for onboarding
+export const BUSINESS_TYPES = [
+    { value: 'barbershop', label: 'Barbershop / Pangkas' },
+    { value: 'salon', label: 'Salon Kecantikan' },
+    { value: 'autoshop', label: 'Bengkel / Auto Service' },
+    { value: 'laundry', label: 'Laundry' },
+    { value: 'fnb', label: 'Makanan & Minuman' },
+    { value: 'retail', label: 'Toko Retail' },
+    { value: 'other', label: 'Lainnya' },
+] as const;
+
+// Check if business type is a service business (no inventory features)
+export const isServiceBusiness = (businessType: string): boolean => {
+    return ['barbershop', 'salon', 'autoshop', 'laundry'].includes(businessType);
+};
+
 // Product types
 export interface Product {
     id: string;

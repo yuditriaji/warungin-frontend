@@ -32,6 +32,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 setUser(data.user);
                 setTenant(data.tenant);
 
+                // Check if onboarding is complete (business_type is set)
+                if (!data.tenant.business_type) {
+                    router.push('/onboarding');
+                    return;
+                }
+
                 // Fetch subscription to get plan
                 const subData = await getSubscription();
                 const plan = subData?.subscription?.plan || 'gratis';
@@ -82,6 +88,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <Sidebar
                 userRole={user?.role}
                 userPlan={userPlan}
+                businessType={tenant?.business_type}
                 userName={user?.name}
                 tenantName={tenant?.name}
                 isOpen={sidebarOpen}

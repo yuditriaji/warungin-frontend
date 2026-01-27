@@ -10,6 +10,8 @@ interface SidebarItem {
     icon: React.ReactNode;
     roles?: string[];
     minPlan?: string[]; // Plans that can access: ['gratis','pemula','bisnis','enterprise']
+    hideForServiceBusiness?: boolean; // Hide this menu for service businesses
+    serviceLabel?: string; // Alternative label for service businesses
 }
 
 // Plan hierarchy for comparison
@@ -17,6 +19,12 @@ const planOrder = ['gratis', 'pemula', 'bisnis', 'enterprise'];
 const hasPlanAccess = (userPlan: string, requiredPlans?: string[]): boolean => {
     if (!requiredPlans) return true;
     return requiredPlans.includes(userPlan);
+};
+
+// Service business types that don't need inventory features
+const serviceBusinessTypes = ['barbershop', 'salon', 'autoshop', 'laundry'];
+const checkIsServiceBusiness = (businessType?: string): boolean => {
+    return businessType ? serviceBusinessTypes.includes(businessType) : false;
 };
 
 const menuItems: SidebarItem[] = [
@@ -31,6 +39,7 @@ const menuItems: SidebarItem[] = [
     },
     {
         name: 'Kasir',
+        serviceLabel: 'Catat Transaksi',
         href: '/pos',
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,6 +49,7 @@ const menuItems: SidebarItem[] = [
     },
     {
         name: 'Produk',
+        serviceLabel: 'Layanan',
         href: '/products',
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,6 +67,7 @@ const menuItems: SidebarItem[] = [
         ),
         roles: ['owner', 'manager'],
         minPlan: ['pemula', 'bisnis', 'enterprise'],
+        hideForServiceBusiness: true,
     },
     {
         name: 'Bahan Baku',
@@ -68,6 +79,7 @@ const menuItems: SidebarItem[] = [
         ),
         roles: ['owner', 'manager'],
         minPlan: ['pemula', 'bisnis', 'enterprise'],
+        hideForServiceBusiness: true,
     },
     {
         name: 'Transaksi',
@@ -148,22 +160,34 @@ const menuItems: SidebarItem[] = [
 interface SidebarProps {
     userRole?: string;
     userPlan?: string;
+    businessType?: string;
     userName?: string;
     tenantName?: string;
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', userName = '', tenantName = '', isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', businessType = '', userName = '', tenantName = '', isOpen = false, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const isServiceBusiness = checkIsServiceBusiness(businessType);
 
     const filteredItems = menuItems.filter((item) => {
         // Check role access
         const hasRoleAccess = !item.roles || item.roles.includes(userRole);
         // Check plan access
         const hasPlanAccess = !item.minPlan || item.minPlan.includes(userPlan);
-        return hasRoleAccess && hasPlanAccess;
+        // Hide for service business
+        const showForBusinessType = !item.hideForServiceBusiness || !isServiceBusiness;
+        return hasRoleAccess && hasPlanAccess && showForBusinessType;
     });
+
+    // Transform menu names based on business type
+    const getMenuName = (item: SidebarItem) => {
+        if (isServiceBusiness && item.serviceLabel) {
+            return item.serviceLabel;
+        }
+        return item.name;
+    };
 
     return (
         <>
@@ -214,7 +238,7 @@ export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', userN
                                     }`}
                             >
                                 <span className={isActive ? 'text-purple-600' : ''}>{item.icon}</span>
-                                <span>{item.name}</span>
+                                <span>{getMenuName(item)}</span>
                             </Link>
                         );
                     })}
