@@ -188,6 +188,7 @@ export interface Product {
     cost: number;
     tax_rate: number;
     stock_qty: number;
+    use_material_stock: boolean;
     image_url: string;
     is_active: boolean;
     modifiers?: ProductModifierType[];
@@ -213,6 +214,7 @@ export interface CreateProductInput {
     category_id?: string;
     image_url?: string;
     outlet_id?: string;
+    use_material_stock?: boolean;
 }
 
 // Product API functions

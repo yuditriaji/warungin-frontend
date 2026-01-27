@@ -41,6 +41,7 @@ export default function ProductsPage() {
         sku: '',
         cost: 0,
         stock_qty: 0,
+        use_material_stock: false,
     });
     const [saving, setSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -92,7 +93,7 @@ export default function ProductsPage() {
         if (result) {
             setShowModal(false);
             setEditingId(null);
-            setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0 });
+            setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0, use_material_stock: false });
         }
         setSaving(false);
     };
@@ -105,13 +106,14 @@ export default function ProductsPage() {
             sku: product.sku || '',
             cost: product.cost || 0,
             stock_qty: product.stock_qty || 0,
+            use_material_stock: product.use_material_stock || false,
         });
         setShowModal(true);
     };
 
     const openCreateModal = () => {
         setEditingId(null);
-        setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0 });
+        setFormData({ name: '', price: 0, sku: '', cost: 0, stock_qty: 0, use_material_stock: false });
         setShowModal(true);
     };
 
@@ -239,7 +241,16 @@ export default function ProductsPage() {
                             <h3 className="font-medium text-gray-900 mb-1 truncate">{product.name}</h3>
                             <p className="text-lg font-bold text-purple-600 mb-2">{formatPrice(product.price)}</p>
                             <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
-                                <span>Stok: {product.stock_qty}</span>
+                                {product.use_material_stock ? (
+                                    <span className="flex items-center gap-1 text-blue-600">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                        Stok dari Bahan
+                                    </span>
+                                ) : (
+                                    <span>Stok: {product.stock_qty}</span>
+                                )}
                             </div>
                             <div className="flex gap-2 flex-wrap">
                                 <button
@@ -337,15 +348,40 @@ export default function ProductsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
-                                    <input
-                                        type="number"
-                                        value={formData.stock_qty || ''}
-                                        onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                        placeholder="100"
-                                    />
+                                    {formData.use_material_stock ? (
+                                        <>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
+                                            <div className="w-full px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+                                                Dihitung dari bahan baku
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
+                                            <input
+                                                type="number"
+                                                value={formData.stock_qty || ''}
+                                                onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                                placeholder="100"
+                                            />
+                                        </>
+                                    )}
                                 </div>
+                            </div>
+                            {/* Material Stock Toggle */}
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div>
+                                    <p className="font-medium text-gray-900">Stok dari Bahan Baku</p>
+                                    <p className="text-sm text-gray-500">Stok dihitung otomatis dari ketersediaan bahan</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, use_material_stock: !formData.use_material_stock })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${formData.use_material_stock ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                >
+                                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.use_material_stock ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button
