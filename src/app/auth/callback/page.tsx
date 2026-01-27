@@ -38,9 +38,9 @@ function AuthCallbackContent() {
             setStatus('success');
 
             if (isNewUser) {
-                setMessage('Akun berhasil dibuat! Mengalihkan ke pengaturan...');
+                setMessage('Akun berhasil dibuat! Mengalihkan ke profil bisnis...');
                 setTimeout(() => {
-                    router.push('/settings/business');
+                    router.push('/onboarding');
                 }, 1500);
             } else {
                 setMessage('Login berhasil! Mengalihkan ke dashboard...');
