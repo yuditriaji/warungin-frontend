@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated, getCurrentUser, updateTenantProfile, BUSINESS_TYPES, Tenant } from '@/lib/api';
+import { isAuthenticated, getCurrentUser, updateTenantProfile, BUSINESS_TYPES, Tenant, Region, getProvinces, getCities } from '@/lib/api';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -14,6 +14,15 @@ export default function OnboardingPage() {
     const [businessType, setBusinessType] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
+
+    // Address hierarchy
+    const [provinces, setProvinces] = useState<Region[]>([]);
+    const [cities, setCities] = useState<Region[]>([]);
+    const [selectedProvince, setSelectedProvince] = useState<{ id: string; name: string } | null>(null);
+    const [selectedCity, setSelectedCity] = useState<{ id: string; name: string } | null>(null);
+    const [postalCode, setPostalCode] = useState('');
+    const [loadingCities, setLoadingCities] = useState(false);
+
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -34,11 +43,48 @@ export default function OnboardingPage() {
                     return;
                 }
             }
+
+            // Load provinces
+            const provincesData = await getProvinces();
+            setProvinces(provincesData);
+
             setLoading(false);
         };
 
         checkAuth();
     }, [router]);
+
+    // Load cities when province changes
+    const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const provinceId = e.target.value;
+        const province = provinces.find(p => p.id === provinceId);
+
+        if (province) {
+            setSelectedProvince({ id: province.id, name: province.name });
+            setSelectedCity(null);
+            setCities([]);
+            setLoadingCities(true);
+
+            const citiesData = await getCities(provinceId);
+            setCities(citiesData);
+            setLoadingCities(false);
+        } else {
+            setSelectedProvince(null);
+            setSelectedCity(null);
+            setCities([]);
+        }
+    };
+
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const cityId = e.target.value;
+        const city = cities.find(c => c.id === cityId);
+
+        if (city) {
+            setSelectedCity({ id: city.id, name: city.name });
+        } else {
+            setSelectedCity(null);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,6 +101,11 @@ export default function OnboardingPage() {
             business_type: businessType,
             phone,
             address,
+            province_id: selectedProvince?.id,
+            province_name: selectedProvince?.name,
+            city_id: selectedCity?.id,
+            city_name: selectedCity?.name,
+            postal_code: postalCode,
         });
 
         if (result) {
@@ -75,7 +126,7 @@ export default function OnboardingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
@@ -90,7 +141,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Business Name */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -118,8 +169,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setBusinessType(type.value)}
                                     className={`p-4 rounded-xl border-2 text-left transition-all ${businessType === type.value
-                                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
                                         }`}
                                 >
                                     <span className="text-lg block mb-1">
@@ -151,17 +202,73 @@ export default function OnboardingPage() {
                         />
                     </div>
 
-                    {/* Address (Optional) */}
+                    {/* Province & City */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Provinsi
+                            </label>
+                            <select
+                                value={selectedProvince?.id || ''}
+                                onChange={handleProvinceChange}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                            >
+                                <option value="">Pilih Provinsi</option>
+                                {provinces.map((province) => (
+                                    <option key={province.id} value={province.id}>
+                                        {province.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Kota/Kabupaten
+                            </label>
+                            <select
+                                value={selectedCity?.id || ''}
+                                onChange={handleCityChange}
+                                disabled={!selectedProvince || loadingCities}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                <option value="">
+                                    {loadingCities ? 'Memuat...' : 'Pilih Kota'}
+                                </option>
+                                {cities.map((city) => (
+                                    <option key={city.id} value={city.id}>
+                                        {city.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Postal Code */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Alamat <span className="text-gray-400">(opsional)</span>
+                            Kode Pos <span className="text-gray-400">(opsional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={postalCode}
+                            onChange={(e) => setPostalCode(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="12345"
+                            maxLength={5}
+                        />
+                    </div>
+
+                    {/* Address Detail */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Alamat Lengkap <span className="text-gray-400">(opsional)</span>
                         </label>
                         <textarea
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                             rows={2}
-                            placeholder="Alamat bisnis Anda"
+                            placeholder="Jl. Contoh No. 123"
                         />
                     </div>
 

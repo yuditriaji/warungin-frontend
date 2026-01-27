@@ -143,6 +143,11 @@ export interface UpdateTenantInput {
     business_type?: string;
     phone?: string;
     address?: string;
+    province_id?: string;
+    province_name?: string;
+    city_id?: string;
+    city_name?: string;
+    postal_code?: string;
 }
 
 export const updateTenantProfile = async (input: UpdateTenantInput): Promise<Tenant | null> => {
@@ -1330,4 +1335,51 @@ export const uploadQRISImage = async (file: File): Promise<TenantSettings | null
         console.error('Failed to upload QRIS image:', error);
     }
     return null;
+};
+
+// Region types and API (Indonesian provinces/cities)
+export interface Region {
+    id: string;
+    name: string;
+}
+
+const REGION_API_URL = 'https://warungin-backend.onrender.com/api/v1';
+
+export const getProvinces = async (): Promise<Region[]> => {
+    try {
+        const response = await fetch(`${REGION_API_URL}/regions/provinces`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch provinces:', error);
+    }
+    return [];
+};
+
+export const getCities = async (provinceId: string): Promise<Region[]> => {
+    try {
+        const response = await fetch(`${REGION_API_URL}/regions/provinces/${provinceId}/cities`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch cities:', error);
+    }
+    return [];
+};
+
+export const getDistricts = async (cityId: string): Promise<Region[]> => {
+    try {
+        const response = await fetch(`${REGION_API_URL}/regions/cities/${cityId}/districts`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch districts:', error);
+    }
+    return [];
 };
