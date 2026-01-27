@@ -92,8 +92,8 @@ export default function InventoryPage() {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-xl font-medium transition-colors ${filter === f
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         {f === 'all' && 'Semua'}
@@ -131,20 +131,36 @@ export default function InventoryPage() {
                                         {item.sku && <p className="text-xs text-gray-500">{item.sku}</p>}
                                     </td>
                                     <td className="px-4 py-3 text-center">
-                                        <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
+                                        {item.use_material_stock ? (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
+                                                <span className="text-xs text-blue-600 flex items-center gap-1">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                    dari bahan
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
                                     <td className="px-4 py-3 text-right text-gray-600">{formatPrice(item.stock_value)}</td>
                                     <td className="px-4 py-3 text-right">
-                                        <button
-                                            onClick={() => {
-                                                setAdjustModal({ item, open: true });
-                                                setAdjustQty(0);
-                                            }}
-                                            className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                                        >
-                                            Ubah Stok
-                                        </button>
+                                        {item.use_material_stock ? (
+                                            <span className="text-xs text-gray-400">Kelola di Bahan Baku</span>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setAdjustModal({ item, open: true });
+                                                    setAdjustQty(0);
+                                                }}
+                                                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                                            >
+                                                Ubah Stok
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

@@ -638,6 +638,7 @@ export interface InventoryItem {
     product_name: string;
     sku: string;
     stock_qty: number;
+    use_material_stock: boolean;
     price: number;
     cost: number;
     stock_value: number;
