@@ -17,7 +17,8 @@ import {
     linkMaterial,
     unlinkMaterial,
     calculateProductCost,
-    getCurrentUser
+    getCurrentUser,
+    getSubscription
 } from '@/lib/api';
 
 export default function ProductsPage() {
@@ -34,6 +35,7 @@ export default function ProductsPage() {
     const [usedUnit, setUsedUnit] = useState('');
     const [conversionRate, setConversionRate] = useState(1);
     const [currentOutletId, setCurrentOutletId] = useState<string | undefined>(undefined);
+    const [subscriptionPlan, setSubscriptionPlan] = useState<string>('gratis');
 
     const [formData, setFormData] = useState<CreateProductInput>({
         name: '',
@@ -55,6 +57,13 @@ export default function ProductsPage() {
         const userData = await getCurrentUser();
         const outletId = userData?.user?.outlet_id || undefined;
         setCurrentOutletId(outletId);
+
+        // Get subscription plan
+        const subData = await getSubscription();
+        if (subData?.subscription?.plan) {
+            setSubscriptionPlan(subData.subscription.plan);
+        }
+
         await loadProducts(outletId);
         await loadMaterials(outletId);
     };
@@ -369,20 +378,22 @@ export default function ProductsPage() {
                                     )}
                                 </div>
                             </div>
-                            {/* Material Stock Toggle */}
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div>
-                                    <p className="font-medium text-gray-900">Stok dari Bahan Baku</p>
-                                    <p className="text-sm text-gray-500">Stok dihitung otomatis dari ketersediaan bahan</p>
+                            {/* Material Stock Toggle - only for Pemula and above */}
+                            {subscriptionPlan !== 'gratis' && (
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                    <div>
+                                        <p className="font-medium text-gray-900">Stok dari Bahan Baku</p>
+                                        <p className="text-sm text-gray-500">Stok dihitung otomatis dari ketersediaan bahan</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, use_material_stock: !formData.use_material_stock })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors ${formData.use_material_stock ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.use_material_stock ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, use_material_stock: !formData.use_material_stock })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${formData.use_material_stock ? 'bg-blue-500' : 'bg-gray-300'}`}
-                                >
-                                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.use_material_stock ? 'translate-x-6' : 'translate-x-0'}`} />
-                                </button>
-                            </div>
+                            )}
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
