@@ -334,34 +334,6 @@ export default function ProductsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modal (Biaya Bahan)</label>
-                                    {subscriptionPlan === 'gratis' ? (
-                                        <>
-                                            <input
-                                                type="number"
-                                                value={formData.cost || ''}
-                                                onChange={(e) => setFormData({ ...formData, cost: Number(e.target.value) })}
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                                placeholder="10000"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Masukkan biaya modal manual</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-600">
-                                                {editingId ? (
-                                                    <span>Otomatis dari bahan terkait</span>
-                                                ) : (
-                                                    <span>Tambahkan bahan setelah membuat produk</span>
-                                                )}
-                                            </div>
-                                            <p className="text-xs text-gray-500 mt-1">Biaya modal dihitung otomatis dari bahan yang ditautkan</p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
                                     <input
                                         type="text"
@@ -371,31 +343,82 @@ export default function ProductsPage() {
                                         placeholder="NG-001"
                                     />
                                 </div>
-                                <div>
-                                    {formData.use_material_stock ? (
-                                        <>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
-                                            <div className="w-full px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
-                                                Dihitung dari bahan baku
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
-                                            <input
-                                                type="number"
-                                                value={formData.stock_qty || ''}
-                                                onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                                placeholder="100"
-                                            />
-                                        </>
-                                    )}
-                                </div>
                             </div>
-                            {/* Material Stock Toggle - only for Pemula and above */}
+
+                            {/* Finished Goods Toggle - for products without recipe */}
                             {subscriptionPlan !== 'gratis' && (
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-200">
+                                    <div>
+                                        <p className="font-medium text-gray-900">Produk Jadi (Tanpa Resep)</p>
+                                        <p className="text-sm text-gray-500">Untuk produk yang dijual tanpa bahan baku</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            use_material_stock: !formData.use_material_stock ? false : false,
+                                            // Toggle between finished goods mode
+                                        })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors ${!formData.use_material_stock ? 'bg-orange-500' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${!formData.use_material_stock ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Modal / COGS Section */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Harga Modal (COGS)</label>
+                                {subscriptionPlan === 'gratis' || !formData.use_material_stock ? (
+                                    <>
+                                        <input
+                                            type="number"
+                                            value={formData.cost || ''}
+                                            onChange={(e) => setFormData({ ...formData, cost: Number(e.target.value) })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                            placeholder="10000"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {subscriptionPlan === 'gratis'
+                                                ? 'Masukkan biaya modal manual'
+                                                : '💡 Masukkan biaya modal langsung untuk produk jadi'}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-600">
+                                            {editingId ? (
+                                                <span>Otomatis dari bahan terkait</span>
+                                            ) : (
+                                                <span>Tambahkan bahan setelah membuat produk</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">Biaya modal dihitung otomatis dari bahan yang ditautkan</p>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Stock Section */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Stok</label>
+                                {formData.use_material_stock ? (
+                                    <div className="w-full px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+                                        Dihitung dari bahan baku
+                                    </div>
+                                ) : (
+                                    <input
+                                        type="number"
+                                        value={formData.stock_qty || ''}
+                                        onChange={(e) => setFormData({ ...formData, stock_qty: Number(e.target.value) })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                        placeholder="100"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Material Stock Toggle - only for Pemula and above (when NOT in finished goods mode) */}
+                            {subscriptionPlan !== 'gratis' && (
+                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
                                     <div>
                                         <p className="font-medium text-gray-900">Stok dari Bahan Baku</p>
                                         <p className="text-sm text-gray-500">Stok dihitung otomatis dari ketersediaan bahan</p>

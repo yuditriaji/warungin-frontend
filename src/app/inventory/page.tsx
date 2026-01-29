@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { InventoryItem, InventorySummary, getInventory, getInventorySummary, updateStock } from '@/lib/api';
+import { InventoryItem, InventorySummary, getInventory, getInventorySummary, updateStock, Outlet, getOutlets, getCurrentUser, getSubscription, importInventory, downloadImportTemplate, ImportResult } from '@/lib/api';
 
 export default function InventoryPage() {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -12,15 +12,50 @@ export default function InventoryPage() {
     const [adjustModal, setAdjustModal] = useState<{ item: InventoryItem; open: boolean } | null>(null);
     const [adjustQty, setAdjustQty] = useState(0);
 
+    // Outlet filtering
+    const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [hasMultiOutlet, setHasMultiOutlet] = useState(false);
+
+    // Import state
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<ImportResult | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        initPage();
+    }, []);
+
     useEffect(() => {
         loadData();
-    }, [filter]);
+    }, [filter, selectedOutlet]);
+
+    const initPage = async () => {
+        // Check subscription for multi-outlet support
+        const subData = await getSubscription();
+        const plan = subData?.subscription?.plan || 'gratis';
+        const isMultiOutlet = plan === 'bisnis' || plan === 'enterprise';
+        setHasMultiOutlet(isMultiOutlet);
+
+        if (isMultiOutlet) {
+            const outletData = await getOutlets();
+            setOutlets(outletData);
+        }
+
+        // Get user's current outlet if assigned
+        const userData = await getCurrentUser();
+        if (userData?.user?.outlet_id) {
+            setSelectedOutlet(userData.user.outlet_id);
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
+        const outletId = selectedOutlet || undefined;
         const [inventoryData, summaryData] = await Promise.all([
-            getInventory(filter),
-            getInventorySummary(),
+            getInventory(filter, outletId),
+            getInventorySummary(outletId),
         ]);
         setInventory(inventoryData);
         setSummary(summaryData);
@@ -56,11 +91,43 @@ export default function InventoryPage() {
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImporting(true);
+        setImportResult(null);
+
+        const result = await importInventory(file, selectedOutlet || undefined);
+        setImportResult(result);
+        setImporting(false);
+
+        if (result && result.success_count > 0) {
+            loadData(); // Reload inventory data
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     return (
         <AppLayout>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Stok & Inventori</h1>
-                <p className="text-gray-500">Pantau stok produk</p>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Stok & Inventori</h1>
+                    <p className="text-gray-500">Pantau stok produk</p>
+                </div>
+                <button
+                    onClick={() => setShowImportModal(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Import Excel
+                </button>
             </div>
 
             {/* Summary Cards */}
@@ -85,7 +152,26 @@ export default function InventoryPage() {
                 </div>
             )}
 
-            {/* Filter */}
+            {/* Outlet Filter - only for multi-outlet plans */}
+            {hasMultiOutlet && outlets.length > 0 && (
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Filter per Outlet</label>
+                    <select
+                        value={selectedOutlet}
+                        onChange={(e) => setSelectedOutlet(e.target.value)}
+                        className="px-4 py-2 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                        <option value="">Semua Outlet</option>
+                        {outlets.map((outlet) => (
+                            <option key={outlet.id} value={outlet.id}>
+                                {outlet.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Status Filter */}
             <div className="flex gap-2 mb-6">
                 {(['all', 'low', 'out'] as const).map((f) => (
                     <button
@@ -217,6 +303,123 @@ export default function InventoryPage() {
                                 Simpan
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Modal */}
+            {showImportModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">Import Stok dari Excel</h2>
+                            <button
+                                onClick={() => {
+                                    setShowImportModal(false);
+                                    setImportResult(null);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {!importResult ? (
+                            <>
+                                <p className="text-gray-600 mb-4">
+                                    Upload file Excel (.xlsx) atau CSV dengan format yang sesuai untuk mengimport data stok produk.
+                                </p>
+
+                                <button
+                                    onClick={downloadImportTemplate}
+                                    className="w-full mb-4 py-2 px-4 border border-purple-300 text-purple-600 rounded-xl hover:bg-purple-50 flex items-center justify-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Download Template
+                                </button>
+
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                        accept=".xlsx,.xls,.csv"
+                                        className="hidden"
+                                        id="file-upload"
+                                    />
+                                    <label
+                                        htmlFor="file-upload"
+                                        className="cursor-pointer"
+                                    >
+                                        {importing ? (
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-2"></div>
+                                                <p className="text-gray-600">Mengupload...</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                <p className="text-gray-600">Klik untuk pilih file</p>
+                                                <p className="text-sm text-gray-400 mt-1">.xlsx, .xls, atau .csv</p>
+                                            </>
+                                        )}
+                                    </label>
+                                </div>
+
+                                <div className="mt-4 p-3 bg-blue-50 rounded-xl">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>Format kolom:</strong> Nama Produk, SKU, Stok, Harga, Modal
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <div>
+                                <div className={`p-4 rounded-xl mb-4 ${importResult.failed_count === 0 ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                                    <p className={`font-medium ${importResult.failed_count === 0 ? 'text-green-700' : 'text-yellow-700'}`}>
+                                        Import selesai!
+                                    </p>
+                                    <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                                        <div>
+                                            <p className="text-2xl font-bold text-gray-900">{importResult.total_rows}</p>
+                                            <p className="text-xs text-gray-500">Total Baris</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-green-600">{importResult.success_count}</p>
+                                            <p className="text-xs text-gray-500">Berhasil</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-red-600">{importResult.failed_count}</p>
+                                            <p className="text-xs text-gray-500">Gagal</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {importResult.errors && importResult.errors.length > 0 && (
+                                    <div className="max-h-32 overflow-auto bg-red-50 rounded-xl p-3 mb-4">
+                                        <p className="text-sm font-medium text-red-700 mb-1">Error:</p>
+                                        {importResult.errors.map((error, idx) => (
+                                            <p key={idx} className="text-xs text-red-600">{error}</p>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        setShowImportModal(false);
+                                        setImportResult(null);
+                                    }}
+                                    className="w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
+                                >
+                                    Selesai
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

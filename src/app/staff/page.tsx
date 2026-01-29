@@ -5,23 +5,32 @@ import AppLayout from '@/components/AppLayout';
 import {
     Staff,
     Outlet,
+    StaffInvite,
     CreateStaffInput,
+    InviteStaffInput,
     getStaff,
     createStaff,
     updateStaff,
-    deleteStaff,
     getOutlets,
-    getSubscription
+    getSubscription,
+    inviteStaff,
+    getPendingInvites,
+    cancelInvite,
+    resendInvite,
 } from '@/lib/api';
 
 export default function StaffPage() {
     const [staff, setStaff] = useState<Staff[]>([]);
     const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [pendingInvites, setPendingInvites] = useState<StaffInvite[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [modalMode, setModalMode] = useState<'create' | 'invite' | 'edit'>('invite');
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [isBisnisPlan, setIsBisnisPlan] = useState(false);
+    const [activeTab, setActiveTab] = useState<'active' | 'pending'>('active');
     const [formData, setFormData] = useState<CreateStaffInput>({
         name: '',
         email: '',
@@ -43,27 +52,43 @@ export default function StaffPage() {
         const hasBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
         setIsBisnisPlan(hasBisnisPlan);
 
-        // Fetch staff and outlets (only if Bisnis+)
-        const [staffData, outletsData] = await Promise.all([
+        // Fetch staff, outlets, and pending invites
+        const [staffData, outletsData, invitesData] = await Promise.all([
             getStaff(),
-            hasBisnisPlan ? getOutlets() : Promise.resolve([])
+            hasBisnisPlan ? getOutlets() : Promise.resolve([]),
+            getPendingInvites(),
         ]);
         setStaff(staffData);
         setOutlets(outletsData);
+        setPendingInvites(invitesData);
         setLoading(false);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
+
         try {
             if (editingStaff) {
+                // Edit mode
                 await updateStaff(editingStaff.id, {
                     name: formData.name,
                     role: formData.role,
                     outlet_id: formData.outlet_id || undefined,
                 });
+            } else if (modalMode === 'invite') {
+                // Invite mode - send email invitation
+                const inviteInput: InviteStaffInput = {
+                    name: formData.name,
+                    email: formData.email,
+                    role: formData.role as 'manager' | 'cashier',
+                    outlet_id: formData.outlet_id || undefined,
+                };
+                await inviteStaff(inviteInput);
+                setSuccessMessage('Undangan berhasil dikirim ke ' + formData.email);
             } else {
+                // Direct create mode (legacy)
                 await createStaff(formData);
             }
             setShowModal(false);
@@ -77,6 +102,7 @@ export default function StaffPage() {
 
     const openEditModal = (member: Staff) => {
         setEditingStaff(member);
+        setModalMode('edit');
         setFormData({
             name: member.name,
             email: member.email,
@@ -87,8 +113,9 @@ export default function StaffPage() {
         setShowModal(true);
     };
 
-    const openCreateModal = () => {
+    const openInviteModal = () => {
         setEditingStaff(null);
+        setModalMode('invite');
         setFormData({ name: '', email: '', password: '', role: 'cashier', outlet_id: '' });
         setShowModal(true);
     };
@@ -96,6 +123,23 @@ export default function StaffPage() {
     const handleToggleActive = async (member: Staff) => {
         const success = await updateStaff(member.id, { is_active: !member.is_active });
         if (success) {
+            loadData();
+        }
+    };
+
+    const handleCancelInvite = async (id: string) => {
+        if (confirm('Batalkan undangan ini?')) {
+            const success = await cancelInvite(id);
+            if (success) {
+                loadData();
+            }
+        }
+    };
+
+    const handleResendInvite = async (id: string) => {
+        const success = await resendInvite(id);
+        if (success) {
+            setSuccessMessage('Undangan berhasil dikirim ulang');
             loadData();
         }
     };
@@ -109,6 +153,14 @@ export default function StaffPage() {
             default:
                 return <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Kasir</span>;
         }
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
     };
 
     if (loading) {
@@ -130,86 +182,196 @@ export default function StaffPage() {
                     <p className="text-gray-500">Kelola tim dan hak akses</p>
                 </div>
                 <button
-                    onClick={openCreateModal}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-purple-700"
+                    onClick={openInviteModal}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-purple-700 flex items-center gap-2"
                 >
-                    + Tambah Staff
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Undang Staff
                 </button>
             </div>
 
-            {/* Staff List */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                {staff.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <div className="text-6xl mb-4">👥</div>
-                        <p className="text-lg font-medium mb-2">Belum ada staff</p>
-                        <p className="text-sm">Tambahkan staff untuk membantu mengelola bisnis Anda</p>
-                    </div>
-                ) : (
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nama</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Outlet</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {staff.map((member) => (
-                                <tr key={member.id} className={`hover:bg-gray-50 ${!member.is_active ? 'opacity-50' : ''}`}>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                                <span className="text-purple-600 font-medium text-sm">
-                                                    {member.name.charAt(0).toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <span className="font-medium text-gray-900">{member.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-gray-500">{member.email}</td>
-                                    <td className="px-4 py-3">{getRoleBadge(member.role)}</td>
-                                    <td className="px-4 py-3 text-gray-500">{member.outlet?.name || '-'}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`px-2 py-1 text-xs rounded-full ${member.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                            {member.is_active ? 'Aktif' : 'Nonaktif'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {member.role !== 'owner' && (
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => openEditModal(member)}
-                                                    className="px-3 py-1 text-sm text-purple-600 hover:bg-purple-50 rounded-lg"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggleActive(member)}
-                                                    className={`px-3 py-1 text-sm rounded-lg ${member.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
-                                                >
-                                                    {member.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+            {/* Success Message */}
+            {successMessage && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center justify-between">
+                    <span>{successMessage}</span>
+                    <button onClick={() => setSuccessMessage('')} className="text-green-700 hover:text-green-900">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            )}
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4">
+                <button
+                    onClick={() => setActiveTab('active')}
+                    className={`px-4 py-2 rounded-xl font-medium transition-colors ${activeTab === 'active'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                >
+                    Staff Aktif ({staff.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('pending')}
+                    className={`px-4 py-2 rounded-xl font-medium transition-colors ${activeTab === 'pending'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                >
+                    Undangan Pending ({pendingInvites.length})
+                </button>
             </div>
 
-            {/* Add/Edit Staff Modal */}
+            {/* Active Staff List */}
+            {activeTab === 'active' && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {staff.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <div className="text-6xl mb-4">👥</div>
+                            <p className="text-lg font-medium mb-2">Belum ada staff</p>
+                            <p className="text-sm">Undang staff untuk membantu mengelola bisnis Anda</p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nama</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Outlet</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {staff.map((member) => (
+                                    <tr key={member.id} className={`hover:bg-gray-50 ${!member.is_active ? 'opacity-50' : ''}`}>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                                    <span className="text-purple-600 font-medium text-sm">
+                                                        {member.name.charAt(0).toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <span className="font-medium text-gray-900">{member.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-500">{member.email}</td>
+                                        <td className="px-4 py-3">{getRoleBadge(member.role)}</td>
+                                        <td className="px-4 py-3 text-gray-500">{member.outlet?.name || '-'}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 text-xs rounded-full ${member.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {member.is_active ? 'Aktif' : 'Nonaktif'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            {member.role !== 'owner' && (
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => openEditModal(member)}
+                                                        className="px-3 py-1 text-sm text-purple-600 hover:bg-purple-50 rounded-lg"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleToggleActive(member)}
+                                                        className={`px-3 py-1 text-sm rounded-lg ${member.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
+                                                    >
+                                                        {member.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* Pending Invites List */}
+            {activeTab === 'pending' && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {pendingInvites.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <div className="text-6xl mb-4">📧</div>
+                            <p className="text-lg font-medium mb-2">Tidak ada undangan pending</p>
+                            <p className="text-sm">Undangan yang belum diterima akan muncul di sini</p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nama</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Dikirim</th>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Kadaluarsa</th>
+                                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {pendingInvites.map((invite) => (
+                                    <tr key={invite.id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                                    <span className="text-yellow-600 font-medium text-sm">
+                                                        {invite.name.charAt(0).toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <span className="font-medium text-gray-900">{invite.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-500">{invite.email}</td>
+                                        <td className="px-4 py-3">{getRoleBadge(invite.role)}</td>
+                                        <td className="px-4 py-3 text-gray-500">{formatDate(invite.created_at)}</td>
+                                        <td className="px-4 py-3 text-gray-500">{formatDate(invite.expires_at)}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleResendInvite(invite.id)}
+                                                    className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                >
+                                                    Kirim Ulang
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCancelInvite(invite.id)}
+                                                    className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                                                >
+                                                    Batalkan
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* Invite/Edit Staff Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md p-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">
-                            {editingStaff ? 'Edit Staff' : 'Tambah Staff'}
+                            {editingStaff ? 'Edit Staff' : 'Undang Staff Baru'}
                         </h2>
+
+                        {!editingStaff && (
+                            <div className="mb-4 p-3 bg-blue-50 rounded-xl">
+                                <p className="text-sm text-blue-700">
+                                    📧 Staff akan menerima email undangan untuk mengaktifkan akun mereka.
+                                </p>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {error && (
                                 <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
@@ -226,30 +388,17 @@ export default function StaffPage() {
                                 />
                             </div>
                             {!editingStaff && (
-                                <>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                                        <input
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                            placeholder="john@example.com"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                                        <input
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl"
-                                            placeholder="••••••••"
-                                            required
-                                        />
-                                    </div>
-                                </>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl"
+                                        placeholder="john@example.com"
+                                        required
+                                    />
+                                </div>
                             )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -289,7 +438,7 @@ export default function StaffPage() {
                                     type="submit"
                                     className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
                                 >
-                                    {editingStaff ? 'Simpan' : 'Tambah'}
+                                    {editingStaff ? 'Simpan' : 'Kirim Undangan'}
                                 </button>
                             </div>
                         </form>

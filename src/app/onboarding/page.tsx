@@ -12,6 +12,7 @@ export default function OnboardingPage() {
 
     const [businessName, setBusinessName] = useState('');
     const [businessType, setBusinessType] = useState('');
+    const [customBusinessType, setCustomBusinessType] = useState(''); // For "Lainnya" option
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
 
@@ -95,10 +96,31 @@ export default function OnboardingPage() {
             return;
         }
 
+        // Validate custom business type for "Lainnya"
+        if (businessType === 'other' && !customBusinessType.trim()) {
+            setError('Masukkan jenis bisnis Anda');
+            return;
+        }
+
+        // Validate mandatory address fields
+        if (!selectedProvince) {
+            setError('Pilih provinsi Anda');
+            return;
+        }
+
+        if (!selectedCity) {
+            setError('Pilih kota/kabupaten Anda');
+            return;
+        }
+
         setSaving(true);
+
+        // Use custom business type if "other" is selected
+        const finalBusinessType = businessType === 'other' ? customBusinessType.trim() : businessType;
+
         const result = await updateTenantProfile({
             name: businessName,
-            business_type: businessType,
+            business_type: finalBusinessType,
             phone,
             address,
             province_id: selectedProvince?.id,
@@ -186,6 +208,19 @@ export default function OnboardingPage() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Custom input for "Lainnya" */}
+                        {businessType === 'other' && (
+                            <div className="mt-3">
+                                <input
+                                    type="text"
+                                    value={customBusinessType}
+                                    onChange={(e) => setCustomBusinessType(e.target.value)}
+                                    className="w-full px-4 py-3 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
+                                    placeholder="Masukkan jenis bisnis Anda..."
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Phone (Optional) */}
@@ -206,7 +241,7 @@ export default function OnboardingPage() {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Provinsi
+                                Provinsi <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={selectedProvince?.id || ''}
@@ -223,7 +258,7 @@ export default function OnboardingPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Kota/Kabupaten
+                                Kota/Kabupaten <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={selectedCity?.id || ''}

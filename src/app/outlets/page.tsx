@@ -41,6 +41,7 @@ export default function OutletsPage() {
         postal_code: '',
         phone: '',
     });
+    const [customBusinessType, setCustomBusinessType] = useState(''); // For "Lainnya" option
 
     useEffect(() => {
         loadData();
@@ -114,11 +115,16 @@ export default function OutletsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        // Use custom business type if 'other' is selected
+        const finalBusinessType = formData.business_type === 'other' ? customBusinessType.trim() : formData.business_type;
+        const submitData = { ...formData, business_type: finalBusinessType };
+
         try {
             if (editingOutlet) {
-                await updateOutlet(editingOutlet.id, formData);
+                await updateOutlet(editingOutlet.id, submitData);
             } else {
-                await createOutlet(formData);
+                await createOutlet(submitData);
             }
             setShowModal(false);
             setEditingOutlet(null);
@@ -141,14 +147,20 @@ export default function OutletsPage() {
             postal_code: '',
             phone: '',
         });
+        setCustomBusinessType('');
         setCities([]);
     };
 
     const openEditModal = async (outlet: Outlet) => {
         setEditingOutlet(outlet);
+
+        // Check if business_type is a custom value (not in predefined list)
+        const predefinedTypes = ['fnb', 'retail', 'barbershop', 'laundry', 'service', 'other'];
+        const isCustomType = outlet.business_type && !predefinedTypes.includes(outlet.business_type);
+
         setFormData({
             name: outlet.name,
-            business_type: outlet.business_type || '',
+            business_type: isCustomType ? 'other' : (outlet.business_type || ''),
             address: outlet.address || '',
             province_id: outlet.province_id || '',
             province_name: outlet.province_name || '',
@@ -157,6 +169,8 @@ export default function OutletsPage() {
             postal_code: outlet.postal_code || '',
             phone: outlet.phone || '',
         });
+        setCustomBusinessType(isCustomType ? (outlet.business_type || '') : '');
+
         // Load cities if province is set
         if (outlet.province_id) {
             await loadCities(outlet.province_id);
@@ -330,6 +344,17 @@ export default function OutletsPage() {
                                     <option value="service">Jasa</option>
                                     <option value="other">Lainnya</option>
                                 </select>
+
+                                {/* Custom input for "Lainnya" */}
+                                {formData.business_type === 'other' && (
+                                    <input
+                                        type="text"
+                                        value={customBusinessType}
+                                        onChange={(e) => setCustomBusinessType(e.target.value)}
+                                        className="w-full mt-2 px-4 py-2 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
+                                        placeholder="Masukkan jenis bisnis Anda..."
+                                    />
+                                )}
                             </div>
 
                             <div>

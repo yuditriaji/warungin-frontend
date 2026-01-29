@@ -658,10 +658,14 @@ export interface InventorySummary {
 }
 
 // Inventory API
-export const getInventory = async (filter?: 'all' | 'low' | 'out'): Promise<InventoryItem[]> => {
+export const getInventory = async (filter?: 'all' | 'low' | 'out', outletId?: string): Promise<InventoryItem[]> => {
     try {
+        const params = new URLSearchParams();
+        if (filter && filter !== 'all') params.append('filter', filter);
+        if (outletId) params.append('outlet_id', outletId);
+
         let url = '/api/v1/inventory';
-        if (filter && filter !== 'all') url += '?filter=' + filter;
+        if (params.toString()) url += '?' + params.toString();
 
         const response = await fetchWithAuth(url);
         if (response.ok) {
@@ -674,9 +678,12 @@ export const getInventory = async (filter?: 'all' | 'low' | 'out'): Promise<Inve
     return [];
 };
 
-export const getInventorySummary = async (): Promise<InventorySummary | null> => {
+export const getInventorySummary = async (outletId?: string): Promise<InventorySummary | null> => {
     try {
-        const response = await fetchWithAuth('/api/v1/inventory/summary');
+        let url = '/api/v1/inventory/summary';
+        if (outletId) url += '?outlet_id=' + outletId;
+
+        const response = await fetchWithAuth(url);
         if (response.ok) {
             const data = await response.json();
             return data.data;
@@ -698,6 +705,68 @@ export const updateStock = async (productId: string, quantity: number): Promise<
         console.error('Failed to update stock:', error);
     }
     return false;
+};
+
+// Inventory Import types
+export interface ImportResult {
+    total_rows: number;
+    success_count: number;
+    failed_count: number;
+    errors: string[];
+}
+
+// Import inventory from Excel/CSV file
+export const importInventory = async (file: File, outletId?: string): Promise<ImportResult | null> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (outletId) {
+            formData.append('outlet_id', outletId);
+        }
+
+        const token = getAccessToken();
+        const response = await fetch(`${API_URL}/api/v1/inventory/import`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to import inventory:', error);
+    }
+    return null;
+};
+
+// Download import template
+export const downloadImportTemplate = async (): Promise<void> => {
+    try {
+        const token = getAccessToken();
+        const response = await fetch(`${API_URL}/api/v1/inventory/import/template`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'template_import_stok.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+    } catch (error) {
+        console.error('Failed to download template:', error);
+    }
 };
 
 // Payment types
@@ -1284,6 +1353,119 @@ export const getActivityLogs = async (): Promise<ActivityLog[]> => {
         console.error('Failed to fetch logs:', error);
     }
     return [];
+};
+
+// Staff Invite types
+export interface StaffInvite {
+    id: string;
+    tenant_id: string;
+    email: string;
+    name: string;
+    role: string;
+    status: string;
+    expires_at: string;
+    created_at: string;
+}
+
+export interface InviteStaffInput {
+    name: string;
+    email: string;
+    role: 'manager' | 'cashier';
+    outlet_id?: string;
+}
+
+export interface InviteValidation {
+    name: string;
+    email: string;
+    role: string;
+    tenant_name: string;
+}
+
+// Staff Invitation API
+export const inviteStaff = async (input: InviteStaffInput): Promise<StaffInvite | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/staff/invite', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send invitation');
+    } catch (error) {
+        console.error('Failed to invite staff:', error);
+        throw error;
+    }
+};
+
+export const getPendingInvites = async (): Promise<StaffInvite[]> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/staff/invites');
+        if (response.ok) {
+            const data = await response.json();
+            return data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch pending invites:', error);
+    }
+    return [];
+};
+
+export const cancelInvite = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/staff/invites/${id}`, {
+            method: 'DELETE',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to cancel invite:', error);
+    }
+    return false;
+};
+
+export const resendInvite = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/staff/invites/${id}/resend`, {
+            method: 'POST',
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to resend invite:', error);
+    }
+    return false;
+};
+
+// Public invite validation (no auth required)
+export const validateInvite = async (token: string): Promise<InviteValidation | null> => {
+    try {
+        const response = await fetch(`${API_URL}/api/v1/invite/validate?token=${token}`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to validate invite:', error);
+    }
+    return null;
+};
+
+// Accept invite (no auth required)
+export const acceptInvite = async (token: string, password: string): Promise<boolean> => {
+    try {
+        const response = await fetch(`${API_URL}/api/v1/invite/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token, password }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to accept invite:', error);
+    }
+    return false;
 };
 
 // Tenant Settings types
