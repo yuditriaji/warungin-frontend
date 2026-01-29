@@ -25,7 +25,10 @@ function SettingsContent() {
         qris_label: '',
         tax_enabled: false,
         tax_rate: 11,
-        tax_label: ''
+        tax_label: '',
+        service_charge_enabled: false,
+        service_charge_rate: 10,
+        service_charge_label: ''
     });
     const [savingQris, setSavingQris] = useState(false);
     const [uploadingQris, setUploadingQris] = useState(false);
@@ -447,6 +450,80 @@ function SettingsContent() {
                                 className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                                 {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Pajak'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Service Charge Settings Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan Service Charge</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Aktifkan service charge untuk menambahkan biaya layanan ke setiap transaksi. Umum digunakan di restoran dan kafe.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Service Charge Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">Aktifkan Service Charge</p>
+                                    <p className="text-sm text-gray-500">Tambahkan biaya layanan ke setiap transaksi</p>
+                                </div>
+                                <button
+                                    onClick={() => setQrisSettings({ ...qrisSettings, service_charge_enabled: !qrisSettings.service_charge_enabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.service_charge_enabled ? 'bg-purple-600' : 'bg-gray-200'
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.service_charge_enabled ? 'left-7' : 'left-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {qrisSettings.service_charge_enabled && (
+                                <>
+                                    {/* Service Charge Rate Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Tarif Service Charge (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.5"
+                                            value={qrisSettings.service_charge_rate || 10}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_rate: parseFloat(e.target.value) || 0 })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                                            placeholder="10"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Umumnya 5% - 10% di Indonesia</p>
+                                    </div>
+
+                                    {/* Service Charge Label */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Label Service Charge
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={qrisSettings.service_charge_label || ''}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_label: e.target.value })}
+                                            placeholder="Service 10%"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Label ini akan muncul di struk dan laporan</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveQrisSettings}
+                                disabled={savingQris}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Service Charge'}
                             </button>
                         </div>
                     </div>
