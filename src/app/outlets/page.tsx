@@ -10,7 +10,10 @@ import {
     createOutlet,
     updateOutlet,
     deleteOutlet,
-    getOutletStats
+    getOutletStats,
+    Region,
+    getProvinces,
+    getCities
 } from '@/lib/api';
 
 export default function OutletsPage() {
@@ -20,14 +23,28 @@ export default function OutletsPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
     const [error, setError] = useState('');
+
+    // Address selection states
+    const [provinces, setProvinces] = useState<Region[]>([]);
+    const [cities, setCities] = useState<Region[]>([]);
+    const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingCities, setLoadingCities] = useState(false);
+
     const [formData, setFormData] = useState<CreateOutletInput>({
         name: '',
+        business_type: '',
         address: '',
+        province_id: '',
+        province_name: '',
+        city_id: '',
+        city_name: '',
+        postal_code: '',
         phone: '',
     });
 
     useEffect(() => {
         loadData();
+        loadProvinces();
     }, []);
 
     const loadData = async () => {
@@ -45,6 +62,45 @@ export default function OutletsPage() {
         }
         setStats(statsMap);
         setLoading(false);
+    };
+
+    const loadProvinces = async () => {
+        setLoadingProvinces(true);
+        const data = await getProvinces();
+        setProvinces(data);
+        setLoadingProvinces(false);
+    };
+
+    const loadCities = async (provinceId: string) => {
+        if (!provinceId) {
+            setCities([]);
+            return;
+        }
+        setLoadingCities(true);
+        const data = await getCities(provinceId);
+        setCities(data);
+        setLoadingCities(false);
+    };
+
+    const handleProvinceChange = (provinceId: string) => {
+        const province = provinces.find(p => p.id === provinceId);
+        setFormData({
+            ...formData,
+            province_id: provinceId,
+            province_name: province?.name || '',
+            city_id: '',
+            city_name: '',
+        });
+        loadCities(provinceId);
+    };
+
+    const handleCityChange = (cityId: string) => {
+        const city = cities.find(c => c.id === cityId);
+        setFormData({
+            ...formData,
+            city_id: cityId,
+            city_name: city?.name || '',
+        });
     };
 
     const formatPrice = (price: number) => {
@@ -66,26 +122,51 @@ export default function OutletsPage() {
             }
             setShowModal(false);
             setEditingOutlet(null);
-            setFormData({ name: '', address: '', phone: '' });
+            resetFormData();
             loadData();
         } catch (err: any) {
             setError(err.message || 'Gagal menyimpan outlet');
         }
     };
 
-    const openEditModal = (outlet: Outlet) => {
+    const resetFormData = () => {
+        setFormData({
+            name: '',
+            business_type: '',
+            address: '',
+            province_id: '',
+            province_name: '',
+            city_id: '',
+            city_name: '',
+            postal_code: '',
+            phone: '',
+        });
+        setCities([]);
+    };
+
+    const openEditModal = async (outlet: Outlet) => {
         setEditingOutlet(outlet);
         setFormData({
             name: outlet.name,
+            business_type: outlet.business_type || '',
             address: outlet.address || '',
+            province_id: outlet.province_id || '',
+            province_name: outlet.province_name || '',
+            city_id: outlet.city_id || '',
+            city_name: outlet.city_name || '',
+            postal_code: outlet.postal_code || '',
             phone: outlet.phone || '',
         });
+        // Load cities if province is set
+        if (outlet.province_id) {
+            await loadCities(outlet.province_id);
+        }
         setShowModal(true);
     };
 
     const openCreateModal = () => {
         setEditingOutlet(null);
-        setFormData({ name: '', address: '', phone: '' });
+        resetFormData();
         setShowModal(true);
     };
 
@@ -145,6 +226,13 @@ export default function OutletsPage() {
                 ) : (
                     outlets.map((outlet) => {
                         const outletStats = stats[outlet.id];
+                        const fullAddress = [
+                            outlet.address,
+                            outlet.city_name,
+                            outlet.province_name,
+                            outlet.postal_code
+                        ].filter(Boolean).join(', ');
+
                         return (
                             <div key={outlet.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
                                 <div className="flex items-start justify-between mb-3">
@@ -158,8 +246,11 @@ export default function OutletsPage() {
                                     </span>
                                 </div>
                                 <h3 className="font-semibold text-gray-900 text-lg mb-1">{outlet.name}</h3>
-                                {outlet.address && (
-                                    <p className="text-sm text-gray-500 mb-1">📍 {outlet.address}</p>
+                                {outlet.business_type && (
+                                    <p className="text-xs text-purple-600 bg-purple-50 inline-block px-2 py-0.5 rounded mb-2">{outlet.business_type}</p>
+                                )}
+                                {fullAddress && (
+                                    <p className="text-sm text-gray-500 mb-1">📍 {fullAddress}</p>
                                 )}
                                 {outlet.phone && (
                                     <p className="text-sm text-gray-500">📞 {outlet.phone}</p>
@@ -204,7 +295,7 @@ export default function OutletsPage() {
             {/* Add/Edit Outlet Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6">
+                    <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">
                             {editingOutlet ? 'Edit Outlet' : 'Tambah Outlet'}
                         </h2>
@@ -223,16 +314,86 @@ export default function OutletsPage() {
                                     required
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Bisnis</label>
+                                <select
+                                    value={formData.business_type}
+                                    onChange={(e) => setFormData({ ...formData, business_type: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                                    <option value="">Pilih tipe bisnis</option>
+                                    <option value="fnb">F&B (Makanan & Minuman)</option>
+                                    <option value="retail">Retail</option>
+                                    <option value="barbershop">Barbershop/Salon</option>
+                                    <option value="laundry">Laundry</option>
+                                    <option value="service">Jasa</option>
+                                    <option value="other">Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Detail</label>
                                 <textarea
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     rows={2}
-                                    placeholder="Jl. Sudirman No. 123"
+                                    placeholder="Jl. Sudirman No. 123, Gedung A Lt. 2"
                                 />
                             </div>
+
+                            {/* Province Selection */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Provinsi</label>
+                                <select
+                                    value={formData.province_id}
+                                    onChange={(e) => handleProvinceChange(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    disabled={loadingProvinces}
+                                >
+                                    <option value="">{loadingProvinces ? 'Memuat...' : 'Pilih Provinsi'}</option>
+                                    {provinces.map((province) => (
+                                        <option key={province.id} value={province.id}>
+                                            {province.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* City Selection */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Kota/Kabupaten</label>
+                                <select
+                                    value={formData.city_id}
+                                    onChange={(e) => handleCityChange(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    disabled={!formData.province_id || loadingCities}
+                                >
+                                    <option value="">
+                                        {loadingCities ? 'Memuat...' : !formData.province_id ? 'Pilih provinsi dulu' : 'Pilih Kota/Kabupaten'}
+                                    </option>
+                                    {cities.map((city) => (
+                                        <option key={city.id} value={city.id}>
+                                            {city.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Postal Code */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Kode Pos</label>
+                                <input
+                                    type="text"
+                                    value={formData.postal_code}
+                                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="12345"
+                                    maxLength={5}
+                                />
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
                                 <input
@@ -243,6 +404,7 @@ export default function OutletsPage() {
                                     placeholder="021-1234567"
                                 />
                             </div>
+
                             <div className="flex gap-2 pt-4">
                                 <button
                                     type="button"

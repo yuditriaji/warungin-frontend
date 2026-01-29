@@ -1065,16 +1065,28 @@ export interface Outlet {
     id: string;
     tenant_id: string;
     name: string;
-    address: string;
-    phone: string;
+    business_type?: string;
+    address?: string;
+    province_id?: string;
+    province_name?: string;
+    city_id?: string;
+    city_name?: string;
+    postal_code?: string;
+    phone?: string;
     is_active: boolean;
     created_at: string;
 }
 
 export interface CreateOutletInput {
     name: string;
-    address: string;
-    phone: string;
+    business_type?: string;
+    address?: string;
+    province_id?: string;
+    province_name?: string;
+    city_id?: string;
+    city_name?: string;
+    postal_code?: string;
+    phone?: string;
 }
 
 export interface OutletStats {
