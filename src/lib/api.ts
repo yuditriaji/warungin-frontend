@@ -1291,6 +1291,9 @@ export interface TenantSettings {
     qris_enabled: boolean;
     qris_image_url: string;
     qris_label: string;
+    tax_enabled: boolean;
+    tax_rate: number;
+    tax_label: string;
 }
 
 // Tenant Settings API
@@ -1299,12 +1302,12 @@ export const getTenantSettings = async (): Promise<TenantSettings> => {
         const response = await fetchWithAuth('/api/v1/tenant/settings');
         if (response.ok) {
             const data = await response.json();
-            return data.data || { qris_enabled: false, qris_image_url: '', qris_label: '' };
+            return data.data || { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '' };
         }
     } catch (error) {
         console.error('Failed to fetch tenant settings:', error);
     }
-    return { qris_enabled: false, qris_image_url: '', qris_label: '' };
+    return { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '' };
 };
 
 export const updateTenantSettings = async (settings: Partial<TenantSettings>): Promise<TenantSettings | null> => {

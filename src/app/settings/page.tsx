@@ -22,7 +22,10 @@ function SettingsContent() {
     const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
         qris_enabled: false,
         qris_image_url: '',
-        qris_label: ''
+        qris_label: '',
+        tax_enabled: false,
+        tax_rate: 11,
+        tax_label: ''
     });
     const [savingQris, setSavingQris] = useState(false);
     const [uploadingQris, setUploadingQris] = useState(false);
@@ -370,6 +373,80 @@ function SettingsContent() {
                                 className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                                 {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan QRIS'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* PPN/Tax Settings Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan PPN/Pajak</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Aktifkan pajak untuk menerapkan PPN otomatis ke semua transaksi penjualan. Cocok untuk PKP (Pengusaha Kena Pajak).
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Tax Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">Aktifkan PPN</p>
+                                    <p className="text-sm text-gray-500">Tambahkan pajak otomatis ke setiap transaksi</p>
+                                </div>
+                                <button
+                                    onClick={() => setQrisSettings({ ...qrisSettings, tax_enabled: !qrisSettings.tax_enabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.tax_enabled ? 'bg-purple-600' : 'bg-gray-200'
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.tax_enabled ? 'left-7' : 'left-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {qrisSettings.tax_enabled && (
+                                <>
+                                    {/* Tax Rate Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Tarif Pajak (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
+                                            value={qrisSettings.tax_rate || 11}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, tax_rate: parseFloat(e.target.value) || 0 })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                                            placeholder="11"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">PPN standar Indonesia: 11%</p>
+                                    </div>
+
+                                    {/* Tax Label */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Label Pajak
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={qrisSettings.tax_label || ''}
+                                            onChange={(e) => setQrisSettings({ ...qrisSettings, tax_label: e.target.value })}
+                                            placeholder="PPN 11%"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Label ini akan muncul di struk dan laporan</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveQrisSettings}
+                                disabled={savingQris}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Pajak'}
                             </button>
                         </div>
                     </div>
