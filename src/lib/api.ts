@@ -62,6 +62,40 @@ export const getGoogleAuthUrl = (): string => {
     return `${API_URL}/api/v1/auth/google`;
 };
 
+// Login with email and password (for staff)
+export interface LoginResponse {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+    user: User;
+    tenant: Tenant;
+}
+
+export const loginWithEmail = async (email: string, password: string): Promise<LoginResponse> => {
+    const response = await fetch(`${API_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+    }
+
+    const data: LoginResponse = await response.json();
+
+    // Store tokens
+    storeTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+    });
+
+    return data;
+};
+
 // API fetch with auth
 export const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     const token = getAccessToken();

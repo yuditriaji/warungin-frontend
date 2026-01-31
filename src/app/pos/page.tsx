@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Receipt from '@/components/Receipt';
-import { Product, getProducts, createTransaction, Transaction, TenantSettings, getTenantSettings } from '@/lib/api';
+import { Product, getProducts, createTransaction, Transaction, TenantSettings, getTenantSettings, Outlet, getOutlets, getSubscription, getCurrentUser } from '@/lib/api';
 
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -25,14 +25,46 @@ export default function POSPage() {
     const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string>('');
     const [cashReceived, setCashReceived] = useState<number>(0);
 
+    // Outlet filtering state
+    const [outlets, setOutlets] = useState<Outlet[]>([]);
+    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [hasMultiOutlet, setHasMultiOutlet] = useState(false);
+
     useEffect(() => {
-        loadProducts();
-        loadQrisSettings();
+        initPage();
     }, []);
+
+    useEffect(() => {
+        if (!loading) {
+            loadProducts();
+        }
+    }, [selectedOutlet]);
+
+    const initPage = async () => {
+        // Check subscription for multi-outlet support
+        const subData = await getSubscription();
+        const plan = subData?.subscription?.plan || 'gratis';
+        const isMultiOutlet = plan === 'bisnis' || plan === 'enterprise';
+        setHasMultiOutlet(isMultiOutlet);
+
+        if (isMultiOutlet) {
+            const outletData = await getOutlets();
+            setOutlets(outletData);
+        }
+
+        // Get user's current outlet if assigned
+        const userData = await getCurrentUser();
+        if (userData?.user?.outlet_id) {
+            setSelectedOutlet(userData.user.outlet_id);
+        }
+
+        await loadProducts();
+        await loadQrisSettings();
+    };
 
     const loadProducts = async () => {
         setLoading(true);
-        const data = await getProducts();
+        const data = await getProducts(selectedOutlet || undefined);
         // Only show active products in POS
         setProducts(data.filter(p => p.is_active));
         setLoading(false);
@@ -155,7 +187,22 @@ export default function POSPage() {
             <div className="h-full flex flex-col">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-                    <h1 className="text-xl font-bold text-gray-900">Kasir</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-bold text-gray-900">Kasir</h1>
+                        {/* Outlet Filter */}
+                        {hasMultiOutlet && outlets.length > 0 && (
+                            <select
+                                value={selectedOutlet}
+                                onChange={(e) => setSelectedOutlet(e.target.value)}
+                                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                            >
+                                <option value="">Semua Outlet</option>
+                                {outlets.map((outlet) => (
+                                    <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                     <div className="relative flex-1 sm:flex-initial sm:w-64">
                         <input
                             type="text"
