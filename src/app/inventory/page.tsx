@@ -98,17 +98,35 @@ export default function InventoryPage() {
         setImporting(true);
         setImportResult(null);
 
-        const result = await importInventory(file, selectedOutlet || undefined);
-        setImportResult(result);
-        setImporting(false);
+        try {
+            const result = await importInventory(file, selectedOutlet || undefined);
+            setImportResult(result);
 
-        if (result && result.success_count > 0) {
-            loadData(); // Reload inventory data
-        }
-
-        // Reset file input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            if (result && result.success_count > 0) {
+                loadData(); // Reload inventory data
+            } else if (!result) {
+                // Show error feedback if result is null
+                setImportResult({
+                    total_rows: 0,
+                    success_count: 0,
+                    failed_count: 1,
+                    errors: ['Gagal memproses file. Pastikan format file benar.']
+                });
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            setImportResult({
+                total_rows: 0,
+                success_count: 0,
+                failed_count: 1,
+                errors: ['Terjadi kesalahan saat mengupload file.']
+            });
+        } finally {
+            setImporting(false);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
@@ -257,8 +275,11 @@ export default function InventoryPage() {
 
             {/* Adjust Stock Modal */}
             {adjustModal?.open && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    onClick={() => setAdjustModal(null)}
+                >
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
                         <h2 className="text-lg font-bold text-gray-900 mb-2">Ubah Stok</h2>
                         <p className="text-gray-500 mb-4">{adjustModal.item.product_name}</p>
                         <p className="text-sm text-gray-600 mb-2">Stok saat ini: <strong>{adjustModal.item.stock_qty}</strong></p>
@@ -309,8 +330,16 @@ export default function InventoryPage() {
 
             {/* Import Modal */}
             {showImportModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                    onClick={() => {
+                        if (!importing) {
+                            setShowImportModal(false);
+                            setImportResult(null);
+                        }
+                    }}
+                >
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-gray-900">Import Stok dari Excel</h2>
                             <button
