@@ -24,6 +24,11 @@ export default function OnboardingPage() {
     const [postalCode, setPostalCode] = useState('');
     const [loadingCities, setLoadingCities] = useState(false);
 
+    // Referral code
+    const [referralCode, setReferralCode] = useState('');
+    const [referralValid, setReferralValid] = useState<boolean | null>(null);
+    const [validatingReferral, setValidatingReferral] = useState(false);
+
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -49,11 +54,35 @@ export default function OnboardingPage() {
             const provincesData = await getProvinces();
             setProvinces(provincesData);
 
+            // Check for referral code in localStorage (from landing or URL)
+            const storedRef = localStorage.getItem('referral_code');
+            if (storedRef) {
+                setReferralCode(storedRef);
+                validateReferralCode(storedRef);
+            }
+
             setLoading(false);
         };
 
         checkAuth();
     }, [router]);
+
+    // Validate referral code against API
+    const validateReferralCode = async (code: string) => {
+        if (!code) {
+            setReferralValid(null);
+            return;
+        }
+        setValidatingReferral(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/referral/validate/${code}`);
+            setReferralValid(res.ok);
+        } catch {
+            setReferralValid(false);
+        } finally {
+            setValidatingReferral(false);
+        }
+    };
 
     // Load cities when province changes
     const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -128,6 +157,7 @@ export default function OnboardingPage() {
             city_id: selectedCity?.id,
             city_name: selectedCity?.name,
             postal_code: postalCode,
+            referral_code: referralValid ? referralCode : undefined,
         });
 
         if (result) {
@@ -305,6 +335,40 @@ export default function OnboardingPage() {
                             rows={2}
                             placeholder="Jl. Contoh No. 123"
                         />
+                    </div>
+
+                    {/* Referral Code */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kode Referral <span className="text-gray-400">(opsional)</span>
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={referralCode}
+                                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                                onBlur={() => validateReferralCode(referralCode)}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent ${referralValid === true ? 'border-green-500' : referralValid === false ? 'border-red-300' : 'border-gray-200'}`}
+                                placeholder="Contoh: BUDI1234"
+                            />
+                            {validatingReferral && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <div className="w-5 h-5 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
+                                </div>
+                            )}
+                            {!validatingReferral && referralValid === true && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">✓</div>
+                            )}
+                            {!validatingReferral && referralValid === false && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">✗</div>
+                            )}
+                        </div>
+                        {referralValid === true && (
+                            <p className="text-green-600 text-sm mt-1">Kode referral valid!</p>
+                        )}
+                        {referralValid === false && referralCode && (
+                            <p className="text-red-500 text-sm mt-1">Kode referral tidak ditemukan</p>
+                        )}
                     </div>
 
                     {/* Error */}
