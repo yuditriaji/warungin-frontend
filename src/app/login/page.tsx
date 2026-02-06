@@ -16,6 +16,14 @@ export default function LoginPage() {
 
     useEffect(() => {
         setMounted(true);
+
+        // Capture referral code from URL and save to localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('referral_code', refCode);
+        }
+
         // If already authenticated, redirect to dashboard
         if (isAuthenticated()) {
             router.push('/dashboard');

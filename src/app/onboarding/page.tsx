@@ -54,11 +54,17 @@ export default function OnboardingPage() {
             const provincesData = await getProvinces();
             setProvinces(provincesData);
 
-            // Check for referral code in localStorage (from landing or URL)
+            // Check for referral code in URL params first, then localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlRef = urlParams.get('ref');
             const storedRef = localStorage.getItem('referral_code');
-            if (storedRef) {
-                setReferralCode(storedRef);
-                validateReferralCode(storedRef);
+            const refCode = urlRef || storedRef;
+
+            if (refCode) {
+                // Save to localStorage so it persists
+                localStorage.setItem('referral_code', refCode);
+                setReferralCode(refCode);
+                validateReferralCode(refCode);
             }
 
             setLoading(false);
