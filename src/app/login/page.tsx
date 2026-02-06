@@ -17,11 +17,26 @@ export default function LoginPage() {
     useEffect(() => {
         setMounted(true);
 
-        // Capture referral code from URL and save to localStorage
+        // Helper to get cookie value
+        const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            return null;
+        };
+
+        // Helper to set cookie (30 days, shared across subdomains)
+        const setCookie = (name: string, value: string) => {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; domain=.warungin.com; SameSite=Lax`;
+        };
+
+        // Capture referral code from URL and save to cookie
         const urlParams = new URLSearchParams(window.location.search);
         const refCode = urlParams.get('ref');
         if (refCode) {
-            localStorage.setItem('referral_code', refCode);
+            setCookie('referral_code', refCode);
         }
 
         // If already authenticated, redirect to dashboard

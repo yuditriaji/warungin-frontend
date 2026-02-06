@@ -54,15 +54,21 @@ export default function OnboardingPage() {
             const provincesData = await getProvinces();
             setProvinces(provincesData);
 
-            // Check for referral code in URL params first, then localStorage
+            // Helper to get cookie value
+            const getCookie = (name: string) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop()?.split(';').shift();
+                return null;
+            };
+
+            // Check for referral code in URL params first, then cookie
             const urlParams = new URLSearchParams(window.location.search);
             const urlRef = urlParams.get('ref');
-            const storedRef = localStorage.getItem('referral_code');
-            const refCode = urlRef || storedRef;
+            const cookieRef = getCookie('referral_code');
+            const refCode = urlRef || cookieRef;
 
             if (refCode) {
-                // Save to localStorage so it persists
-                localStorage.setItem('referral_code', refCode);
                 setReferralCode(refCode);
                 validateReferralCode(refCode);
             }
