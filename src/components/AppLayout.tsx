@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet, getSubscription } from '@/lib/api';
 
 interface AppLayoutProps {
@@ -183,6 +184,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     {children}
                 </main>
             </div>
+
+            {/* PWA Install Prompt */}
+            <PWAInstallPrompt />
         </div>
     );
 }
