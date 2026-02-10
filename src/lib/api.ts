@@ -854,6 +854,9 @@ export interface PlanInfo {
     id: string;
     name: string;
     price: number;
+    price_monthly: number;
+    price_quarterly: number;
+    price_yearly: number;
     max_users: number;
     max_products: number;
     max_transactions_daily: number;
@@ -890,7 +893,15 @@ export const getPlans = async (): Promise<PlanInfo[]> => {
     return [];
 };
 
-export const getSubscription = async (): Promise<{ subscription: any; plan: PlanInfo } | null> => {
+export const getSubscription = async (): Promise<{
+    subscription: any;
+    plan: PlanInfo;
+    is_cancelled: boolean;
+    cancelled_at: string | null;
+    current_period_end: string;
+    billing_period: string;
+    auto_renew: boolean;
+} | null> => {
     try {
         const response = await fetchWithAuth('/api/v1/subscription');
         if (response.ok) {
@@ -929,40 +940,45 @@ export const upgradePlan = async (plan: string): Promise<boolean> => {
     return false;
 };
 
-// Payment invoice types
-export interface InvoiceResponse {
-    invoice_id: string;
-    invoice_url: string;
-    external_id: string;
+// Billing period types
+export type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
+
+// QRIS subscription payment response
+export interface QRISSubscriptionResponse {
+    qr_content: string;
+    qr_image_url: string;
     amount: number;
-    status: string;
+    base_amount: number;
+    ppn_amount: number;
     expires_at: string;
-    description: string;
+    reference_no: string;
+    plan: string;
+    billing_period: BillingPeriod;
 }
 
-// Create a payment invoice for subscription upgrade via Xendit
-export const createSubscriptionInvoice = async (plan: string, email: string): Promise<InvoiceResponse | null> => {
+// Create a QRIS payment for subscription upgrade via Doku
+export const createSubscriptionQRIS = async (plan: string, billingPeriod: BillingPeriod, email: string): Promise<QRISSubscriptionResponse | null> => {
     try {
-        const response = await fetchWithAuth('/api/v1/payment/invoice', {
+        const response = await fetchWithAuth('/api/v1/payment/subscription/qris', {
             method: 'POST',
-            body: JSON.stringify({ plan, email }),
+            body: JSON.stringify({ plan, billing_period: billingPeriod, email }),
         });
         if (response.ok) {
             const data = await response.json();
             return data.data;
         }
         const error = await response.json();
-        console.error('Invoice creation failed:', error);
+        console.error('QRIS creation failed:', error);
     } catch (error) {
-        console.error('Failed to create payment invoice:', error);
+        console.error('Failed to create QRIS payment:', error);
     }
     return null;
 };
 
-// Check invoice payment status
-export const getInvoiceStatus = async (invoiceId: string): Promise<{ status: string; paid_at?: string } | null> => {
+// Check QRIS payment status
+export const checkQRISPaymentStatus = async (reference: string): Promise<{ status: string; paid_at?: string } | null> => {
     try {
-        const response = await fetchWithAuth(`/api/v1/payment/invoice/${invoiceId}/status`, {
+        const response = await fetchWithAuth(`/api/v1/payment/subscription/qris/${reference}/status`, {
             method: 'GET',
         });
         if (response.ok) {
@@ -970,7 +986,43 @@ export const getInvoiceStatus = async (invoiceId: string): Promise<{ status: str
             return data.data;
         }
     } catch (error) {
-        console.error('Failed to get invoice status:', error);
+        console.error('Failed to check QRIS status:', error);
+    }
+    return null;
+};
+
+// Cancel subscription (soft cancel - stays active until period end)
+export const cancelSubscription = async (): Promise<{ message: string } | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription/cancel', {
+            method: 'POST',
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        }
+        const error = await response.json();
+        console.error('Cancel subscription failed:', error);
+    } catch (error) {
+        console.error('Failed to cancel subscription:', error);
+    }
+    return null;
+};
+
+// Reactivate a cancelled subscription
+export const reactivateSubscription = async (): Promise<{ message: string } | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/subscription/reactivate', {
+            method: 'POST',
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        }
+        const error = await response.json();
+        console.error('Reactivate subscription failed:', error);
+    } catch (error) {
+        console.error('Failed to reactivate subscription:', error);
     }
     return null;
 };

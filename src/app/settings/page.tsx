@@ -3,7 +3,16 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
-import { PlanInfo, SubscriptionUsage, TenantSettings, getPlans, getSubscription, getUsage, upgradePlan, getTenantSettings, updateTenantSettings, uploadQRISImage, createSubscriptionInvoice, getCurrentUser } from '@/lib/api';
+import QRISPaymentModal from '@/components/QRISPaymentModal';
+import CancelSubscriptionModal from '@/components/CancelSubscriptionModal';
+import {
+    PlanInfo, SubscriptionUsage, TenantSettings,
+    QRISSubscriptionResponse, BillingPeriod,
+    getPlans, getSubscription, getUsage, upgradePlan,
+    getTenantSettings, updateTenantSettings, uploadQRISImage,
+    createSubscriptionQRIS, getCurrentUser,
+    reactivateSubscription,
+} from '@/lib/api';
 
 // Separate component that uses useSearchParams
 function SettingsContent() {
@@ -17,6 +26,23 @@ function SettingsContent() {
     const [paymentMessage, setPaymentMessage] = useState<string>('');
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<PlanInfo | null>(null);
+
+    // Billing period state
+    const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+
+    // QRIS modal state
+    const [qrisData, setQrisData] = useState<QRISSubscriptionResponse | null>(null);
+    const [showQRISModal, setShowQRISModal] = useState(false);
+
+    // Cancel subscription state
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [subscriptionData, setSubscriptionData] = useState<{
+        is_cancelled: boolean;
+        cancelled_at: string | null;
+        current_period_end: string;
+        billing_period: string;
+        auto_renew: boolean;
+    } | null>(null);
 
     // QRIS Settings state
     const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
@@ -41,7 +67,6 @@ function SettingsContent() {
         const paymentStatus = searchParams.get('payment');
         if (paymentStatus === 'success') {
             setPaymentMessage('✅ Pembayaran berhasil! Paket Anda telah diaktifkan.');
-            // Clean up URL
             router.replace('/settings', { scroll: false });
         } else if (paymentStatus === 'failed') {
             setPaymentMessage('❌ Pembayaran dibatalkan atau gagal. Silakan coba lagi.');
@@ -51,15 +76,22 @@ function SettingsContent() {
 
     const loadData = async () => {
         setLoading(true);
-        const [plansData, subscriptionData, usageData, tenantSettingsData] = await Promise.all([
+        const [plansData, subData, usageData, tenantSettingsData] = await Promise.all([
             getPlans(),
             getSubscription(),
             getUsage(),
             getTenantSettings(),
         ]);
         setPlans(plansData);
-        if (subscriptionData) {
-            setCurrentPlan(subscriptionData.subscription.plan);
+        if (subData) {
+            setCurrentPlan(subData.subscription.plan);
+            setSubscriptionData({
+                is_cancelled: subData.is_cancelled || false,
+                cancelled_at: subData.cancelled_at || null,
+                current_period_end: subData.current_period_end || '',
+                billing_period: subData.billing_period || 'monthly',
+                auto_renew: subData.auto_renew !== false,
+            });
         }
         setUsage(usageData);
         setQrisSettings(tenantSettingsData);
@@ -76,7 +108,6 @@ function SettingsContent() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file size (max 500KB)
         if (file.size > 500 * 1024) {
             alert('File terlalu besar. Maksimal 500KB.');
             return;
@@ -95,11 +126,9 @@ function SettingsContent() {
     const handleUpgrade = async (planId: string) => {
         if (planId === currentPlan) return;
 
-        // Get plan info
         const targetPlan = plans.find(p => p.id === planId);
         if (!targetPlan) return;
 
-        // Show upgrade modal for confirmation
         setSelectedPlan(targetPlan);
         setShowUpgradeModal(true);
     };
@@ -123,11 +152,9 @@ function SettingsContent() {
             return;
         }
 
-        // For paid plans, create Xendit invoice and redirect to payment
-
+        // For paid plans, generate QRIS
         setUpgrading(true);
 
-        // Get user email for invoice
         const userData = await getCurrentUser();
         const email = userData?.user?.email || '';
 
@@ -137,15 +164,69 @@ function SettingsContent() {
             return;
         }
 
-        const invoice = await createSubscriptionInvoice(selectedPlan.id, email);
+        const qris = await createSubscriptionQRIS(selectedPlan.id, billingPeriod, email);
 
-        if (invoice && invoice.invoice_url) {
-            // Redirect to Xendit payment page
-            window.location.href = invoice.invoice_url;
+        if (qris) {
+            setQrisData(qris);
+            setShowQRISModal(true);
         } else {
-            setPaymentMessage('❌ Gagal membuat invoice. Silakan coba lagi.');
-            setUpgrading(false);
+            setPaymentMessage('❌ Gagal membuat QRIS. Silakan coba lagi.');
         }
+        setUpgrading(false);
+    };
+
+    const handleQRISSuccess = () => {
+        setShowQRISModal(false);
+        setQrisData(null);
+        setPaymentMessage('✅ Pembayaran berhasil! Paket Anda telah diaktifkan.');
+        loadData();
+    };
+
+    const handleReactivate = async () => {
+        const result = await reactivateSubscription();
+        if (result) {
+            setPaymentMessage('✅ Langganan diaktifkan kembali!');
+            loadData();
+        } else {
+            setPaymentMessage('❌ Gagal mengaktifkan kembali. Silakan coba lagi.');
+        }
+    };
+
+    const handleCancelConfirmed = () => {
+        setShowCancelModal(false);
+        setPaymentMessage('ℹ️ Langganan akan berakhir di akhir periode. Anda tetap memiliki akses penuh hingga saat itu.');
+        loadData();
+    };
+
+    const getPlanPrice = (plan: PlanInfo): number => {
+        switch (billingPeriod) {
+            case 'quarterly':
+                return plan.price_quarterly || plan.price * 3;
+            case 'yearly':
+                return plan.price_yearly || plan.price * 12;
+            default:
+                return plan.price_monthly || plan.price;
+        }
+    };
+
+    const getMonthlyEquivalent = (plan: PlanInfo): number => {
+        const price = getPlanPrice(plan);
+        switch (billingPeriod) {
+            case 'quarterly':
+                return price / 3;
+            case 'yearly':
+                return price / 12;
+            default:
+                return price;
+        }
+    };
+
+    const getSavingsPercent = (plan: PlanInfo): number => {
+        if (plan.price === 0) return 0;
+        const monthlyTotal = plan.price;
+        const equivalent = getMonthlyEquivalent(plan);
+        if (monthlyTotal === 0) return 0;
+        return Math.round(((monthlyTotal - equivalent) / monthlyTotal) * 100);
     };
 
     const formatPrice = (price: number) => {
@@ -154,11 +235,34 @@ function SettingsContent() {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
-        }).format(price) + '/bulan';
+        }).format(price);
+    };
+
+    const formatPricePerMonth = (price: number) => {
+        if (price === 0) return 'Gratis';
+        return formatPrice(price) + '/bulan';
+    };
+
+    const periodLabel = (period: BillingPeriod) => {
+        const labels: Record<BillingPeriod, string> = {
+            monthly: '/bulan',
+            quarterly: '/3 bulan',
+            yearly: '/tahun',
+        };
+        return labels[period];
+    };
+
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        return new Date(dateStr).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
     };
 
     const getUsagePercent = (used: number, max: number) => {
-        if (max === 0) return 0; // unlimited
+        if (max === 0) return 0;
         return Math.min(100, (used / max) * 100);
     };
 
@@ -177,7 +281,7 @@ function SettingsContent() {
 
             {/* Payment Status Message */}
             {paymentMessage && (
-                <div className={`mb-6 p-4 rounded-xl border ${paymentMessage.includes('✅') ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                <div className={`mb-6 p-4 rounded-xl border ${paymentMessage.includes('✅') ? 'bg-green-50 border-green-200 text-green-800' : paymentMessage.includes('ℹ️') ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
                     <div className="flex justify-between items-center">
                         <span className="font-medium">{paymentMessage}</span>
                         <button
@@ -196,6 +300,47 @@ function SettingsContent() {
                 </div>
             ) : (
                 <>
+                    {/* Subscription Status Banner */}
+                    {currentPlan !== 'gratis' && subscriptionData && (
+                        <div className={`mb-6 p-4 rounded-xl border ${subscriptionData.is_cancelled ? 'bg-orange-50 border-orange-200' : 'bg-purple-50 border-purple-200'}`}>
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${subscriptionData.is_cancelled ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                            {subscriptionData.is_cancelled ? '⏳ Dibatalkan' : '✅ Aktif'}
+                                        </span>
+                                        <span className="text-sm text-gray-600">
+                                            {subscriptionData.billing_period === 'quarterly' ? '3 Bulan' : subscriptionData.billing_period === 'yearly' ? 'Tahunan' : 'Bulanan'}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 mt-1">
+                                        {subscriptionData.is_cancelled
+                                            ? `Berakhir pada ${formatDate(subscriptionData.current_period_end)}`
+                                            : `Berlaku hingga ${formatDate(subscriptionData.current_period_end)}`
+                                        }
+                                    </p>
+                                </div>
+                                <div>
+                                    {subscriptionData.is_cancelled ? (
+                                        <button
+                                            onClick={handleReactivate}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700"
+                                        >
+                                            Aktifkan Kembali
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowCancelModal(true)}
+                                            className="px-4 py-2 border border-red-300 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50"
+                                        >
+                                            Batalkan Langganan
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Usage Section */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
                         <h2 className="font-semibold text-gray-900 mb-4">Penggunaan</h2>
@@ -294,7 +439,6 @@ function SettingsContent() {
                                             Gambar QRIS
                                         </label>
 
-                                        {/* Hidden file input */}
                                         <input
                                             ref={fileInputRef}
                                             type="file"
@@ -304,7 +448,6 @@ function SettingsContent() {
                                         />
 
                                         {qrisSettings.qris_image_url ? (
-                                            /* Show preview when image exists */
                                             <div className="flex items-start gap-4">
                                                 <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                                                     <img
@@ -327,7 +470,6 @@ function SettingsContent() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            /* Upload button when no image */
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={uploadingQris}
@@ -529,49 +671,101 @@ function SettingsContent() {
                     </div>
 
                     {/* Plans Section */}
-                    <h2 className="font-semibold text-gray-900 mb-4">Pilih Paket</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {plans.map((plan) => (
-                            <div
-                                key={plan.id}
-                                className={`bg-white rounded-xl border-2 p-6 transition-all ${currentPlan === plan.id
-                                    ? 'border-purple-500 ring-2 ring-purple-100'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                            >
-                                <div className="mb-4">
-                                    {currentPlan === plan.id && (
-                                        <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full mb-2">
-                                            Paket Aktif
-                                        </span>
-                                    )}
-                                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                                    <p className="text-2xl font-bold text-purple-600">{formatPrice(plan.price)}</p>
-                                </div>
+                    <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
+                        <h2 className="font-semibold text-gray-900">Pilih Paket</h2>
 
-                                <ul className="space-y-2 mb-6">
-                                    {plan.features.map((feature, idx) => (
-                                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                                            <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-
+                        {/* Billing Period Toggle */}
+                        <div className="flex bg-gray-100 rounded-xl p-1">
+                            {([
+                                { value: 'monthly' as BillingPeriod, label: 'Bulanan' },
+                                { value: 'quarterly' as BillingPeriod, label: '3 Bulan', badge: 'Hemat ~10%' },
+                                { value: 'yearly' as BillingPeriod, label: 'Tahunan', badge: 'Hemat ~20%' },
+                            ]).map((option) => (
                                 <button
-                                    onClick={() => handleUpgrade(plan.id)}
-                                    disabled={currentPlan === plan.id || upgrading}
-                                    className={`w-full py-2 rounded-xl font-medium transition-colors ${currentPlan === plan.id
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    key={option.value}
+                                    onClick={() => setBillingPeriod(option.value)}
+                                    className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${billingPeriod === option.value
+                                        ? 'bg-white text-purple-700 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    {currentPlan === plan.id ? 'Paket Aktif' : 'Pilih Paket'}
+                                    {option.label}
+                                    {option.badge && billingPeriod === option.value && (
+                                        <span className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                                            {option.badge}
+                                        </span>
+                                    )}
                                 </button>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {plans.map((plan) => {
+                            const price = getPlanPrice(plan);
+                            const savings = getSavingsPercent(plan);
+
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={`bg-white rounded-xl border-2 p-6 transition-all ${currentPlan === plan.id
+                                        ? 'border-purple-500 ring-2 ring-purple-100'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                >
+                                    <div className="mb-4">
+                                        {currentPlan === plan.id && (
+                                            <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full mb-2">
+                                                Paket Aktif
+                                            </span>
+                                        )}
+                                        <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                                        {plan.price === 0 ? (
+                                            <p className="text-2xl font-bold text-purple-600">Gratis</p>
+                                        ) : (
+                                            <div>
+                                                <p className="text-2xl font-bold text-purple-600">
+                                                    {formatPrice(price)}
+                                                    <span className="text-sm font-normal text-gray-500">{periodLabel(billingPeriod)}</span>
+                                                </p>
+                                                {billingPeriod !== 'monthly' && (
+                                                    <p className="text-sm text-gray-500">
+                                                        {formatPricePerMonth(getMonthlyEquivalent(plan))}
+                                                        {savings > 0 && (
+                                                            <span className="ml-1 text-green-600 font-medium">
+                                                                (-{savings}%)
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <ul className="space-y-2 mb-6">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                                <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <button
+                                        onClick={() => handleUpgrade(plan.id)}
+                                        disabled={currentPlan === plan.id || upgrading}
+                                        className={`w-full py-2 rounded-xl font-medium transition-colors ${currentPlan === plan.id
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                                            }`}
+                                    >
+                                        {currentPlan === plan.id ? 'Paket Aktif' : 'Pilih Paket'}
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </>
             )}
@@ -593,30 +787,31 @@ function SettingsContent() {
                             <div className="mb-6">
                                 <p className="text-gray-700 mb-4">
                                     Upgrade ke paket <span className="font-semibold text-purple-600">{selectedPlan.name}</span>
+                                    {' '}({billingPeriod === 'quarterly' ? '3 Bulan' : billingPeriod === 'yearly' ? 'Tahunan' : 'Bulanan'})
                                 </p>
 
                                 {/* Price Breakdown */}
                                 <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                                     <div className="flex justify-between text-gray-700">
                                         <span>Harga Paket</span>
-                                        <span>{formatPrice(selectedPlan.price).replace('/bulan', '')}</span>
+                                        <span>{formatPrice(getPlanPrice(selectedPlan))}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-700">
                                         <span>PPN 11%</span>
-                                        <span>{formatPrice(selectedPlan.price * 0.11).replace('/bulan', '')}</span>
+                                        <span>{formatPrice(getPlanPrice(selectedPlan) * 0.11)}</span>
                                     </div>
                                     <div className="border-t border-gray-200 pt-2 mt-2">
                                         <div className="flex justify-between font-bold text-gray-900">
                                             <span>Total</span>
                                             <span className="text-purple-600">
-                                                {formatPrice(selectedPlan.price * 1.11)}
+                                                {formatPrice(getPlanPrice(selectedPlan) * 1.11)}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <p className="text-sm text-gray-600 mt-3">
-                                    Anda akan diarahkan ke halaman pembayaran.
+                                    Anda akan membayar melalui QRIS.
                                 </p>
                             </div>
                         )}
@@ -638,6 +833,28 @@ function SettingsContent() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* QRIS Payment Modal */}
+            {showQRISModal && qrisData && (
+                <QRISPaymentModal
+                    qrisData={qrisData}
+                    onSuccess={handleQRISSuccess}
+                    onClose={() => {
+                        setShowQRISModal(false);
+                        setQrisData(null);
+                    }}
+                />
+            )}
+
+            {/* Cancel Subscription Modal */}
+            {showCancelModal && subscriptionData && (
+                <CancelSubscriptionModal
+                    planName={plans.find(p => p.id === currentPlan)?.name || currentPlan}
+                    endDate={formatDate(subscriptionData.current_period_end)}
+                    onConfirm={handleCancelConfirmed}
+                    onClose={() => setShowCancelModal(false)}
+                />
             )}
         </AppLayout>
     );
