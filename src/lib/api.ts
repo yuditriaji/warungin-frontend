@@ -949,7 +949,7 @@ export interface QRISSubscriptionResponse {
     qr_image_url: string;
     amount: number;
     base_amount: number;
-    ppn_amount: number;
+    admin_fee: number;
     expires_at: string;
     reference_no: string;
     plan: string;
@@ -987,6 +987,65 @@ export const checkQRISPaymentStatus = async (reference: string): Promise<{ statu
         }
     } catch (error) {
         console.error('Failed to check QRIS status:', error);
+    }
+    return null;
+};
+
+// VA subscription payment response
+export interface VASubscriptionResponse {
+    va_number: string;
+    bank_name: string;
+    bank_code: string;
+    amount: number;
+    base_amount: number;
+    admin_fee: number;
+    expires_at: string;
+    reference_no: string;
+    plan: string;
+    billing_period: BillingPeriod;
+    instructions: string[];
+}
+
+// Bank options for VA payment
+export type VABankCode = 'mandiri' | 'bni' | 'bri';
+
+export const VA_BANKS: { code: VABankCode; name: string; color: string }[] = [
+    { code: 'mandiri', name: 'Bank Mandiri', color: '#003399' },
+    { code: 'bni', name: 'Bank BNI', color: '#F05922' },
+    { code: 'bri', name: 'Bank BRI', color: '#00529C' },
+];
+
+// Create a VA payment for subscription upgrade via Doku
+export const createSubscriptionVA = async (plan: string, billingPeriod: BillingPeriod, email: string, bankCode: VABankCode): Promise<VASubscriptionResponse | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/payment/subscription/va', {
+            method: 'POST',
+            body: JSON.stringify({ plan, billing_period: billingPeriod, email, bank_code: bankCode }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+        const error = await response.json();
+        console.error('VA creation failed:', error);
+    } catch (error) {
+        console.error('Failed to create VA payment:', error);
+    }
+    return null;
+};
+
+// Check VA payment status
+export const checkVAPaymentStatus = async (reference: string): Promise<{ status: string; paid_at?: string } | null> => {
+    try {
+        const response = await fetchWithAuth(`/api/v1/payment/subscription/va/${reference}/status`, {
+            method: 'GET',
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.data;
+        }
+    } catch (error) {
+        console.error('Failed to check VA status:', error);
     }
     return null;
 };

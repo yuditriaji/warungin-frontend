@@ -1,23 +1,24 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { QRISSubscriptionResponse, checkQRISPaymentStatus } from '@/lib/api';
+import { VASubscriptionResponse, checkVAPaymentStatus } from '@/lib/api';
 
-interface QRISPaymentModalProps {
-    qrisData: QRISSubscriptionResponse;
+interface VAPaymentModalProps {
+    vaData: VASubscriptionResponse;
     onSuccess: () => void;
     onClose: () => void;
 }
 
-export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISPaymentModalProps) {
+export default function VAPaymentModal({ vaData, onSuccess, onClose }: VAPaymentModalProps) {
     const [status, setStatus] = useState<'pending' | 'paid' | 'expired'>('pending');
     const [timeLeft, setTimeLeft] = useState<number>(0);
+    const [copied, setCopied] = useState(false);
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // Calculate time left
-        const expiresAt = new Date(qrisData.expires_at).getTime();
+        const expiresAt = new Date(vaData.expires_at).getTime();
         const updateCountdown = () => {
             const now = Date.now();
             const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
@@ -30,9 +31,9 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
         updateCountdown();
         countdownRef.current = setInterval(updateCountdown, 1000);
 
-        // Start polling for payment status
+        // Start polling for payment status (every 10 seconds for VA)
         pollingRef.current = setInterval(async () => {
-            const result = await checkQRISPaymentStatus(qrisData.reference_no);
+            const result = await checkVAPaymentStatus(vaData.reference_no);
             if (result?.status === 'paid') {
                 setStatus('paid');
                 stopPolling();
@@ -41,10 +42,10 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
                 setStatus('expired');
                 stopPolling();
             }
-        }, 5000);
+        }, 10000);
 
         return () => stopPolling();
-    }, [qrisData, onSuccess]);
+    }, [vaData, onSuccess]);
 
     const stopPolling = () => {
         if (pollingRef.current) {
@@ -58,8 +59,12 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
     };
 
     const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
@@ -89,21 +94,39 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
         return labels[plan] || plan;
     };
 
+    const copyToClipboard = (text: string) => {
+        // Remove leading/trailing spaces from VA number for clipboard
+        const cleanText = text.trim();
+        navigator.clipboard.writeText(cleanText).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    const getBankColor = () => {
+        const colors: Record<string, string> = {
+            mandiri: 'from-blue-800 to-blue-900',
+            bni: 'from-orange-500 to-orange-600',
+            bri: 'from-blue-600 to-blue-700',
+        };
+        return colors[vaData.bank_code] || 'from-purple-600 to-purple-700';
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 text-white">
+                <div className={`bg-gradient-to-r ${getBankColor()} px-6 py-4 text-white`}>
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold">Pembayaran QRIS</h3>
+                        <h3 className="text-lg font-bold">Transfer {vaData.bank_name}</h3>
                         {status === 'pending' && (
                             <button onClick={onClose} className="text-white/70 hover:text-white text-xl">
                                 ✕
                             </button>
                         )}
                     </div>
-                    <p className="text-purple-200 text-sm mt-1">
-                        Warungin {getPlanLabel(qrisData.plan)} — {getPeriodLabel(qrisData.billing_period)}
+                    <p className="text-white/70 text-sm mt-1">
+                        Warungin {getPlanLabel(vaData.plan)} — {getPeriodLabel(vaData.billing_period)}
                     </p>
                 </div>
 
@@ -127,7 +150,7 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <h4 className="text-xl font-bold text-gray-900 mb-2">QRIS Kedaluwarsa</h4>
+                            <h4 className="text-xl font-bold text-gray-900 mb-2">Virtual Account Kedaluwarsa</h4>
                             <p className="text-gray-600 mb-4">Silakan buat pembayaran baru.</p>
                             <button
                                 onClick={onClose}
@@ -137,34 +160,48 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
                             </button>
                         </div>
                     ) : (
-                        /* Pending State — Show QR */
+                        /* Pending State — Show VA Details */
                         <>
-                            {/* QR Code */}
-                            <div className="text-center mb-4">
-                                <div className="inline-block bg-white border-2 border-gray-100 rounded-xl p-4 shadow-sm">
-                                    {qrisData.qr_image_url ? (
-                                        <img
-                                            src={qrisData.qr_image_url}
-                                            alt="QRIS Code"
-                                            className="w-56 h-56 object-contain"
-                                        />
-                                    ) : qrisData.qr_content ? (
-                                        <div className="w-56 h-56 flex items-center justify-center bg-gray-50 rounded-lg">
-                                            <p className="text-xs text-gray-400 text-center px-4 break-all">
-                                                {qrisData.qr_content}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="w-56 h-56 flex items-center justify-center">
-                                            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-                                        </div>
-                                    )}
+                            {/* VA Number */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-500 mb-2">
+                                    Nomor Virtual Account
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-gray-50 border-2 border-gray-200 rounded-xl p-3">
+                                        <p className="text-xl font-mono font-bold text-center tracking-wider text-gray-900">
+                                            {vaData.va_number.trim()}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard(vaData.va_number)}
+                                        className={`px-4 py-3 rounded-xl font-medium text-sm flex items-center gap-1.5 transition-colors ${copied
+                                            ? 'bg-green-100 text-green-700 border-2 border-green-200'
+                                            : 'bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-600'
+                                            }`}
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Tersalin
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                Salin
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
 
                             {/* Timer */}
                             <div className="text-center mb-4">
-                                <span className={`text-sm font-medium ${timeLeft < 120 ? 'text-red-600' : 'text-gray-500'}`}>
+                                <span className={`text-sm font-medium ${timeLeft < 3600 ? 'text-red-600' : 'text-gray-500'}`}>
                                     Berlaku {formatTime(timeLeft)}
                                 </span>
                             </div>
@@ -173,28 +210,27 @@ export default function QRISPaymentModal({ qrisData, onSuccess, onClose }: QRISP
                             <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-1.5">
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Harga Paket</span>
-                                    <span>{formatCurrency(qrisData.base_amount)}</span>
+                                    <span>{formatCurrency(vaData.base_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Biaya Admin</span>
-                                    <span>{formatCurrency(qrisData.admin_fee)}</span>
+                                    <span>{formatCurrency(vaData.admin_fee)}</span>
                                 </div>
                                 <div className="border-t border-gray-200 pt-1.5">
                                     <div className="flex justify-between font-bold text-gray-900">
                                         <span>Total</span>
-                                        <span className="text-purple-600">{formatCurrency(qrisData.amount)}</span>
+                                        <span className="text-purple-600">{formatCurrency(vaData.amount)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Instructions */}
+                            {/* Payment Instructions */}
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4">
                                 <p className="text-sm text-blue-800 font-medium mb-1">Cara Bayar:</p>
                                 <ol className="text-sm text-blue-700 space-y-0.5 list-decimal pl-4">
-                                    <li>Buka aplikasi e-wallet / mobile banking</li>
-                                    <li>Pilih menu &quot;Scan QR&quot; atau &quot;QRIS&quot;</li>
-                                    <li>Scan kode QR di atas</li>
-                                    <li>Konfirmasi pembayaran</li>
+                                    {vaData.instructions.map((instruction, index) => (
+                                        <li key={index}>{instruction}</li>
+                                    ))}
                                 </ol>
                             </div>
 

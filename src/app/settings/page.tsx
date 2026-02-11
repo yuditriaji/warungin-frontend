@@ -4,13 +4,15 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import QRISPaymentModal from '@/components/QRISPaymentModal';
+import VAPaymentModal from '@/components/VAPaymentModal';
 import CancelSubscriptionModal from '@/components/CancelSubscriptionModal';
 import {
     PlanInfo, SubscriptionUsage, TenantSettings,
-    QRISSubscriptionResponse, BillingPeriod,
+    QRISSubscriptionResponse, VASubscriptionResponse,
+    BillingPeriod, VABankCode, VA_BANKS,
     getPlans, getSubscription, getUsage, upgradePlan,
     getTenantSettings, updateTenantSettings, uploadQRISImage,
-    createSubscriptionQRIS, getCurrentUser,
+    createSubscriptionQRIS, createSubscriptionVA, getCurrentUser,
     reactivateSubscription,
 } from '@/lib/api';
 
@@ -30,9 +32,17 @@ function SettingsContent() {
     // Billing period state
     const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
 
+    // Payment method state
+    const [paymentMethod, setPaymentMethod] = useState<'qris' | 'va'>('qris');
+    const [selectedBank, setSelectedBank] = useState<VABankCode>('mandiri');
+
     // QRIS modal state
     const [qrisData, setQrisData] = useState<QRISSubscriptionResponse | null>(null);
     const [showQRISModal, setShowQRISModal] = useState(false);
+
+    // VA modal state
+    const [vaData, setVaData] = useState<VASubscriptionResponse | null>(null);
+    const [showVAModal, setShowVAModal] = useState(false);
 
     // Cancel subscription state
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -152,7 +162,7 @@ function SettingsContent() {
             return;
         }
 
-        // For paid plans, generate QRIS
+        // For paid plans, generate payment
         setUpgrading(true);
 
         const userData = await getCurrentUser();
@@ -164,13 +174,24 @@ function SettingsContent() {
             return;
         }
 
-        const qris = await createSubscriptionQRIS(selectedPlan.id, billingPeriod, email);
-
-        if (qris) {
-            setQrisData(qris);
-            setShowQRISModal(true);
+        if (paymentMethod === 'va') {
+            // Generate VA
+            const va = await createSubscriptionVA(selectedPlan.id, billingPeriod, email, selectedBank);
+            if (va) {
+                setVaData(va);
+                setShowVAModal(true);
+            } else {
+                setPaymentMessage('❌ Gagal membuat Virtual Account. Silakan coba lagi.');
+            }
         } else {
-            setPaymentMessage('❌ Gagal membuat QRIS. Silakan coba lagi.');
+            // Generate QRIS
+            const qris = await createSubscriptionQRIS(selectedPlan.id, billingPeriod, email);
+            if (qris) {
+                setQrisData(qris);
+                setShowQRISModal(true);
+            } else {
+                setPaymentMessage('❌ Gagal membuat QRIS. Silakan coba lagi.');
+            }
         }
         setUpgrading(false);
     };
@@ -178,6 +199,13 @@ function SettingsContent() {
     const handleQRISSuccess = () => {
         setShowQRISModal(false);
         setQrisData(null);
+        setPaymentMessage('✅ Pembayaran berhasil! Paket Anda telah diaktifkan.');
+        loadData();
+    };
+
+    const handleVASuccess = () => {
+        setShowVAModal(false);
+        setVaData(null);
         setPaymentMessage('✅ Pembayaran berhasil! Paket Anda telah diaktifkan.');
         loadData();
     };
@@ -797,22 +825,70 @@ function SettingsContent() {
                                         <span>{formatPrice(getPlanPrice(selectedPlan))}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-700">
-                                        <span>PPN 11%</span>
-                                        <span>{formatPrice(getPlanPrice(selectedPlan) * 0.11)}</span>
+                                        <span>Biaya Admin</span>
+                                        <span>{formatPrice(2500)}</span>
                                     </div>
                                     <div className="border-t border-gray-200 pt-2 mt-2">
                                         <div className="flex justify-between font-bold text-gray-900">
                                             <span>Total</span>
                                             <span className="text-purple-600">
-                                                {formatPrice(getPlanPrice(selectedPlan) * 1.11)}
+                                                {formatPrice(getPlanPrice(selectedPlan) + 2500)}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <p className="text-sm text-gray-600 mt-3">
-                                    Anda akan membayar melalui QRIS.
-                                </p>
+                                {/* Payment Method Selector */}
+                                <div className="mt-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Metode Pembayaran:</p>
+                                    <div className="flex gap-2 mb-3">
+                                        <button
+                                            onClick={() => setPaymentMethod('qris')}
+                                            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all ${paymentMethod === 'qris'
+                                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            📱 QRIS
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('va')}
+                                            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all ${paymentMethod === 'va'
+                                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            🏦 Virtual Account
+                                        </button>
+                                    </div>
+
+                                    {paymentMethod === 'va' && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-500">Pilih Bank:</p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {VA_BANKS.map((bank) => (
+                                                    <button
+                                                        key={bank.code}
+                                                        onClick={() => setSelectedBank(bank.code)}
+                                                        className={`py-2 px-2 rounded-lg text-xs font-medium border-2 transition-all ${selectedBank === bank.code
+                                                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                            }`}
+                                                    >
+                                                        {bank.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {paymentMethod === 'qris'
+                                            ? 'Scan QR dari e-wallet atau mobile banking'
+                                            : `Transfer ke Virtual Account ${VA_BANKS.find(b => b.code === selectedBank)?.name || ''}`
+                                        }
+                                    </p>
+                                </div>
                             </div>
                         )}
 
@@ -843,6 +919,18 @@ function SettingsContent() {
                     onClose={() => {
                         setShowQRISModal(false);
                         setQrisData(null);
+                    }}
+                />
+            )}
+
+            {/* VA Payment Modal */}
+            {showVAModal && vaData && (
+                <VAPaymentModal
+                    vaData={vaData}
+                    onSuccess={handleVASuccess}
+                    onClose={() => {
+                        setShowVAModal(false);
+                        setVaData(null);
                     }}
                 />
             )}
