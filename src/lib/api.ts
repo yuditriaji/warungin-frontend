@@ -201,6 +201,36 @@ export const updateTenantProfile = async (input: UpdateTenantInput): Promise<Ten
     return null;
 };
 
+// Get tenant's current referral/affiliate status
+export interface ReferralStatus {
+    has_referral: boolean;
+    referral_code: string;
+    affiliator_name: string;
+}
+
+export const getReferralStatus = async (): Promise<ReferralStatus> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/tenant/referral-status');
+        if (response.ok) {
+            return response.json();
+        }
+    } catch (error) {
+        console.error('Failed to get referral status:', error);
+    }
+    return { has_referral: false, referral_code: '', affiliator_name: '' };
+};
+
+// Validate a referral code (public endpoint)
+export const validateReferralCode = async (code: string): Promise<{ valid: boolean; data?: { name: string } }> => {
+    try {
+        const response = await fetch(`${API_URL}/api/v1/referral/validate/${code}`);
+        return response.json();
+    } catch (error) {
+        console.error('Failed to validate referral code:', error);
+    }
+    return { valid: false };
+};
+
 // Business type options for onboarding
 export const BUSINESS_TYPES = [
     { value: 'barbershop', label: 'Barbershop / Pangkas' },

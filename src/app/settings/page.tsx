@@ -7,13 +7,14 @@ import QRISPaymentModal from '@/components/QRISPaymentModal';
 import VAPaymentModal from '@/components/VAPaymentModal';
 import CancelSubscriptionModal from '@/components/CancelSubscriptionModal';
 import {
-    PlanInfo, SubscriptionUsage, TenantSettings,
+    PlanInfo, SubscriptionUsage, TenantSettings, ReferralStatus,
     QRISSubscriptionResponse, VASubscriptionResponse,
     BillingPeriod, VABankCode, VA_BANKS, PromoValidationResult,
     getPlans, getSubscription, getUsage, upgradePlan,
     getTenantSettings, updateTenantSettings, uploadQRISImage,
     createSubscriptionQRIS, createSubscriptionVA, getCurrentUser,
     reactivateSubscription, validatePromoCode,
+    getReferralStatus, validateReferralCode, updateTenantProfile,
 } from '@/lib/api';
 
 // Separate component that uses useSearchParams
@@ -76,6 +77,14 @@ function SettingsContent() {
     const [uploadingQris, setUploadingQris] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Referral code state
+    const [referralStatus, setReferralStatus] = useState<ReferralStatus>({ has_referral: false, referral_code: '', affiliator_name: '' });
+    const [referralInput, setReferralInput] = useState('');
+    const [referralValidating, setReferralValidating] = useState(false);
+    const [referralValidResult, setReferralValidResult] = useState<{ valid: boolean; name?: string } | null>(null);
+    const [referralSaving, setReferralSaving] = useState(false);
+    const [referralMessage, setReferralMessage] = useState('');
+
     useEffect(() => {
         loadData();
 
@@ -92,11 +101,12 @@ function SettingsContent() {
 
     const loadData = async () => {
         setLoading(true);
-        const [plansData, subData, usageData, tenantSettingsData] = await Promise.all([
+        const [plansData, subData, usageData, tenantSettingsData, referralData] = await Promise.all([
             getPlans(),
             getSubscription(),
             getUsage(),
             getTenantSettings(),
+            getReferralStatus(),
         ]);
         setPlans(plansData);
         if (subData) {
@@ -111,6 +121,7 @@ function SettingsContent() {
         }
         setUsage(usageData);
         setQrisSettings(tenantSettingsData);
+        setReferralStatus(referralData);
         setLoading(false);
     };
 
@@ -727,6 +738,107 @@ function SettingsContent() {
                                 {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Service Charge'}
                             </button>
                         </div>
+                    </div>
+
+                    {/* Referral Code Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-1">Kode Referral</h2>
+                        <p className="text-sm text-gray-500 mb-4">Masukkan kode referral dari affiliator untuk mendapatkan keuntungan</p>
+
+                        {referralStatus.has_referral ? (
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-green-800">Terhubung dengan Affiliator</div>
+                                        <div className="text-sm text-green-600">
+                                            Kode: <span className="font-mono font-bold">{referralStatus.referral_code}</span>
+                                            {referralStatus.affiliator_name && ` — ${referralStatus.affiliator_name}`}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="flex gap-3">
+                                    <input
+                                        type="text"
+                                        value={referralInput}
+                                        onChange={(e) => {
+                                            setReferralInput(e.target.value.toUpperCase());
+                                            setReferralValidResult(null);
+                                            setReferralMessage('');
+                                        }}
+                                        placeholder="Masukkan kode referral"
+                                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono tracking-wider uppercase"
+                                        maxLength={10}
+                                    />
+                                    <button
+                                        onClick={async () => {
+                                            if (!referralInput.trim()) return;
+                                            setReferralValidating(true);
+                                            setReferralMessage('');
+                                            const result = await validateReferralCode(referralInput.trim());
+                                            setReferralValidResult({ valid: result.valid, name: result.data?.name });
+                                            setReferralValidating(false);
+                                        }}
+                                        disabled={!referralInput.trim() || referralValidating}
+                                        className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                    >
+                                        {referralValidating ? 'Cek...' : 'Validasi'}
+                                    </button>
+                                </div>
+
+                                {referralValidResult && (
+                                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${referralValidResult.valid
+                                            ? 'bg-green-50 text-green-700'
+                                            : 'bg-red-50 text-red-600'
+                                        }`}>
+                                        {referralValidResult.valid ? (
+                                            <>
+                                                <span>✅ Kode valid — Affiliator: <strong>{referralValidResult.name}</strong></span>
+                                            </>
+                                        ) : (
+                                            <span>❌ Kode referral tidak valid atau tidak aktif</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {referralValidResult?.valid && (
+                                    <button
+                                        onClick={async () => {
+                                            setReferralSaving(true);
+                                            setReferralMessage('');
+                                            const result = await updateTenantProfile({ referral_code: referralInput.trim() });
+                                            if (result) {
+                                                const newStatus = await getReferralStatus();
+                                                setReferralStatus(newStatus);
+                                                setReferralInput('');
+                                                setReferralValidResult(null);
+                                                setReferralMessage('✅ Kode referral berhasil diterapkan!');
+                                            } else {
+                                                setReferralMessage('❌ Gagal menyimpan kode referral');
+                                            }
+                                            setReferralSaving(false);
+                                        }}
+                                        disabled={referralSaving}
+                                        className="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                                    >
+                                        {referralSaving ? 'Menyimpan...' : 'Terapkan Kode Referral'}
+                                    </button>
+                                )}
+
+                                {referralMessage && (
+                                    <div className={`text-sm px-3 py-2 rounded-lg ${referralMessage.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                                        {referralMessage}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Plans Section */}
