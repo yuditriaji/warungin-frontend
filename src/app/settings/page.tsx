@@ -9,11 +9,11 @@ import CancelSubscriptionModal from '@/components/CancelSubscriptionModal';
 import {
     PlanInfo, SubscriptionUsage, TenantSettings,
     QRISSubscriptionResponse, VASubscriptionResponse,
-    BillingPeriod, VABankCode, VA_BANKS,
+    BillingPeriod, VABankCode, VA_BANKS, PromoValidationResult,
     getPlans, getSubscription, getUsage, upgradePlan,
     getTenantSettings, updateTenantSettings, uploadQRISImage,
     createSubscriptionQRIS, createSubscriptionVA, getCurrentUser,
-    reactivateSubscription,
+    reactivateSubscription, validatePromoCode,
 } from '@/lib/api';
 
 // Separate component that uses useSearchParams
@@ -53,6 +53,12 @@ function SettingsContent() {
         billing_period: string;
         auto_renew: boolean;
     } | null>(null);
+
+    // Promo code state
+    const [promoCode, setPromoCode] = useState('');
+    const [promoResult, setPromoResult] = useState<PromoValidationResult | null>(null);
+    const [promoLoading, setPromoLoading] = useState(false);
+    const [promoError, setPromoError] = useState('');
 
     // QRIS Settings state
     const [qrisSettings, setQrisSettings] = useState<TenantSettings>({
@@ -143,6 +149,27 @@ function SettingsContent() {
         setShowUpgradeModal(true);
     };
 
+    const resetPromo = () => {
+        setPromoCode('');
+        setPromoResult(null);
+        setPromoError('');
+    };
+
+    const handleValidatePromo = async () => {
+        if (!promoCode.trim() || !selectedPlan) return;
+        setPromoLoading(true);
+        setPromoError('');
+        setPromoResult(null);
+        try {
+            const result = await validatePromoCode(promoCode.trim(), selectedPlan.id, billingPeriod);
+            setPromoResult(result);
+        } catch (err: any) {
+            setPromoError(err.message || 'Kode promo tidak valid');
+        } finally {
+            setPromoLoading(false);
+        }
+    };
+
     const confirmUpgrade = async () => {
         if (!selectedPlan) return;
 
@@ -159,6 +186,7 @@ function SettingsContent() {
                 setPaymentMessage('❌ Gagal mengubah paket. Silakan coba lagi.');
             }
             setUpgrading(false);
+            resetPromo();
             return;
         }
 
@@ -174,9 +202,11 @@ function SettingsContent() {
             return;
         }
 
+        const validPromo = promoResult?.valid ? promoCode.trim() : undefined;
+
         if (paymentMethod === 'va') {
             // Generate VA
-            const va = await createSubscriptionVA(selectedPlan.id, billingPeriod, email, selectedBank);
+            const va = await createSubscriptionVA(selectedPlan.id, billingPeriod, email, selectedBank, validPromo);
             if (va) {
                 setVaData(va);
                 setShowVAModal(true);
@@ -194,6 +224,7 @@ function SettingsContent() {
             }
         }
         setUpgrading(false);
+        resetPromo();
     };
 
     const handleQRISSuccess = () => {
@@ -822,8 +853,14 @@ function SettingsContent() {
                                 <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                                     <div className="flex justify-between text-gray-700">
                                         <span>Harga Paket</span>
-                                        <span>{formatPrice(getPlanPrice(selectedPlan))}</span>
+                                        <span>{formatPrice(promoResult?.valid ? promoResult.base_price : getPlanPrice(selectedPlan))}</span>
                                     </div>
+                                    {promoResult?.valid && (
+                                        <div className="flex justify-between text-green-600">
+                                            <span>Diskon ({promoResult.discount_type === 'percentage' ? `${promoResult.discount_value}%` : formatPrice(promoResult.discount_value)})</span>
+                                            <span>-{formatPrice(promoResult.discount_amount)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-gray-700">
                                         <span>Biaya Admin</span>
                                         <span>{formatPrice(2500)}</span>
@@ -832,7 +869,7 @@ function SettingsContent() {
                                         <div className="flex justify-between font-bold text-gray-900">
                                             <span>Total</span>
                                             <span className="text-purple-600">
-                                                {formatPrice(getPlanPrice(selectedPlan) + 2500)}
+                                                {formatPrice(promoResult?.valid ? promoResult.final_amount : getPlanPrice(selectedPlan) + 2500)}
                                             </span>
                                         </div>
                                     </div>
@@ -888,6 +925,42 @@ function SettingsContent() {
                                             : `Transfer ke Virtual Account ${VA_BANKS.find(b => b.code === selectedBank)?.name || ''}`
                                         }
                                     </p>
+                                </div>
+
+                                {/* Promo Code Input */}
+                                <div className="mt-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Kode Promo (Opsional):</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={promoCode}
+                                            onChange={(e) => {
+                                                setPromoCode(e.target.value.toUpperCase());
+                                                if (promoResult) { setPromoResult(null); setPromoError(''); }
+                                            }}
+                                            placeholder="Masukkan kode promo"
+                                            maxLength={20}
+                                            className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleValidatePromo}
+                                            disabled={!promoCode.trim() || promoLoading}
+                                            className="px-4 py-2 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-200 disabled:opacity-50"
+                                        >
+                                            {promoLoading ? '...' : 'Cek'}
+                                        </button>
+                                    </div>
+                                    {promoResult?.valid && (
+                                        <div className="mt-2 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                                            <span>✅</span>
+                                            <span>Diskon {promoResult.discount_type === 'percentage' ? `${promoResult.discount_value}%` : formatPrice(promoResult.discount_value)} diterapkan!</span>
+                                            <button onClick={resetPromo} className="ml-auto text-gray-400 hover:text-gray-600">✕</button>
+                                        </div>
+                                    )}
+                                    {promoError && (
+                                        <p className="mt-2 text-sm text-red-500">{promoError}</p>
+                                    )}
                                 </div>
                             </div>
                         )}

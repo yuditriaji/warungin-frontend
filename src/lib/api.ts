@@ -999,6 +999,9 @@ export interface VASubscriptionResponse {
     amount: number;
     base_amount: number;
     admin_fee: number;
+    discount_amount: number;
+    original_amount: number;
+    promo_code?: string;
     expires_at: string;
     reference_no: string;
     plan: string;
@@ -1016,11 +1019,13 @@ export const VA_BANKS: { code: VABankCode; name: string; color: string }[] = [
 ];
 
 // Create a VA payment for subscription upgrade via Doku
-export const createSubscriptionVA = async (plan: string, billingPeriod: BillingPeriod, email: string, bankCode: VABankCode): Promise<VASubscriptionResponse | null> => {
+export const createSubscriptionVA = async (plan: string, billingPeriod: BillingPeriod, email: string, bankCode: VABankCode, promoCode?: string): Promise<VASubscriptionResponse | null> => {
     try {
+        const body: any = { plan, billing_period: billingPeriod, email, bank_code: bankCode };
+        if (promoCode) body.promo_code = promoCode;
         const response = await fetchWithAuth('/api/v1/payment/subscription/va', {
             method: 'POST',
-            body: JSON.stringify({ plan, billing_period: billingPeriod, email, bank_code: bankCode }),
+            body: JSON.stringify(body),
         });
         if (response.ok) {
             const data = await response.json();
@@ -1032,6 +1037,36 @@ export const createSubscriptionVA = async (plan: string, billingPeriod: BillingP
         console.error('Failed to create VA payment:', error);
     }
     return null;
+};
+
+// Validate promo code and get discount preview
+export interface PromoValidationResult {
+    valid: boolean;
+    promo_code: string;
+    discount_type: string;
+    discount_value: number;
+    base_price: number;
+    discount_amount: number;
+    admin_fee: number;
+    final_amount: number;
+    has_referral: boolean;
+}
+
+export const validatePromoCode = async (promoCode: string, plan: string, billingPeriod: BillingPeriod): Promise<PromoValidationResult | null> => {
+    try {
+        const response = await fetchWithAuth('/api/v1/payment/validate-promo', {
+            method: 'POST',
+            body: JSON.stringify({ promo_code: promoCode, plan, billing_period: billingPeriod }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        }
+        const error = await response.json();
+        throw new Error(error.error || 'Promo code invalid');
+    } catch (error) {
+        throw error;
+    }
 };
 
 // Check VA payment status
