@@ -34,7 +34,7 @@ function SettingsContent() {
     const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
 
     // Payment method state
-    const [paymentMethod, setPaymentMethod] = useState<'qris' | 'va'>('qris');
+    const [paymentMethod, setPaymentMethod] = useState<'qris' | 'va'>('va');
     const [selectedBank, setSelectedBank] = useState<VABankCode>('mandiri');
     const [showMethodSheet, setShowMethodSheet] = useState(false);
 
@@ -1195,45 +1195,21 @@ function SettingsContent() {
                                                     </div>
                                                 </div>
 
-                                                {/* QRIS */}
+                                                {/* QRIS - Disabled (Coming Soon) */}
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">QR Code</p>
-                                                    <button
-                                                        onClick={() => {
-                                                            setPaymentMethod('qris');
-                                                            setShowMethodSheet(false);
-                                                        }}
-                                                        className={`w-full flex items-center gap-4 py-3 px-4 rounded-xl border-2 transition-all ${paymentMethod === 'qris'
-                                                            ? 'border-purple-500 bg-purple-50'
-                                                            : 'border-gray-200 bg-white hover:border-gray-300'
-                                                            }`}
-                                                    >
+                                                    <div className="w-full flex items-center gap-4 py-3 px-4 rounded-xl border-2 border-gray-100 bg-gray-50 cursor-not-allowed opacity-50">
                                                         <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
-                                                            <img src="/banks/qris.jpg" alt="QRIS" className="w-full h-full object-contain p-1"
-                                                                onError={e => {
-                                                                    const el = e.target as HTMLImageElement;
-                                                                    el.style.display = 'none';
-                                                                    const parent = el.parentElement!;
-                                                                    parent.style.backgroundColor = '#111827';
-                                                                    parent.style.display = 'flex';
-                                                                    parent.style.alignItems = 'center';
-                                                                    parent.style.justifyContent = 'center';
-                                                                    parent.innerHTML = '<span style="color:white;font-size:11px;font-weight:bold;">QRIS</span>';
-                                                                }}
-                                                            />
+                                                            <img src="/banks/qris.jpg" alt="QRIS" className="w-full h-full object-contain p-1 grayscale" />
                                                         </div>
                                                         <div className="text-left">
-                                                            <p className="text-sm font-semibold text-gray-900">QRIS</p>
-                                                            <p className="text-xs text-gray-500">Scan dari semua e-wallet & mobile banking</p>
-                                                        </div>
-                                                        {paymentMethod === 'qris' && (
-                                                            <div className="ml-auto w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                                </svg>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-sm font-semibold text-gray-400">QRIS</p>
+                                                                <span className="text-[10px] font-semibold bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Segera Hadir</span>
                                                             </div>
-                                                        )}
-                                                    </button>
+                                                            <p className="text-xs text-gray-400">Scan dari semua e-wallet &amp; mobile banking</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
