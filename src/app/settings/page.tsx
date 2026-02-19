@@ -1071,7 +1071,10 @@ function SettingsContent() {
                                         <div className="flex items-center gap-3">
                                             {paymentMethod === 'qris' ? (
                                                 <>
-                                                    <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl">📱</div>
+                                                    <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
+                                                        <img src="/banks/qris.png" alt="QRIS" className="w-full h-full object-contain p-1"
+                                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerText = 'QR'; }} />
+                                                    </div>
                                                     <div className="text-left">
                                                         <p className="text-sm font-semibold text-gray-900">QRIS</p>
                                                         <p className="text-xs text-gray-500">Scan dari e-wallet atau mobile banking</p>
@@ -1080,10 +1083,26 @@ function SettingsContent() {
                                             ) : (
                                                 <>
                                                     <div
-                                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                                                        style={{ backgroundColor: VA_BANKS.find(b => b.code === selectedBank)?.color || '#7C3AED' }}
+                                                        className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-white"
                                                     >
-                                                        {selectedBank.toUpperCase().slice(0, 3)}
+                                                        <img
+                                                            src={`/banks/${selectedBank}.png`}
+                                                            alt={VA_BANKS.find(b => b.code === selectedBank)?.name}
+                                                            className="w-full h-full object-contain p-0.5"
+                                                            onError={e => {
+                                                                const el = e.target as HTMLImageElement;
+                                                                el.style.display = 'none';
+                                                                const parent = el.parentElement!;
+                                                                parent.style.backgroundColor = VA_BANKS.find(b => b.code === selectedBank)?.color || '#7C3AED';
+                                                                parent.innerText = selectedBank.toUpperCase().slice(0, 3);
+                                                                parent.style.color = 'white';
+                                                                parent.style.fontSize = '10px';
+                                                                parent.style.fontWeight = 'bold';
+                                                                parent.style.display = 'flex';
+                                                                parent.style.alignItems = 'center';
+                                                                parent.style.justifyContent = 'center';
+                                                            }}
+                                                        />
                                                     </div>
                                                     <div className="text-left">
                                                         <p className="text-sm font-semibold text-gray-900">{VA_BANKS.find(b => b.code === selectedBank)?.name}</p>
@@ -1137,24 +1156,40 @@ function SettingsContent() {
                                                                     setShowMethodSheet(false);
                                                                 }}
                                                                 className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border-2 transition-all ${paymentMethod === 'va' && selectedBank === bank.code
-                                                                        ? 'border-purple-500 bg-purple-50'
-                                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                                    ? 'border-purple-500 bg-purple-50'
+                                                                    : 'border-gray-200 bg-white hover:border-gray-300'
                                                                     }`}
                                                             >
-                                                                <div
-                                                                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm"
-                                                                    style={{ backgroundColor: bank.color }}
-                                                                >
-                                                                    {bank.code.toUpperCase().slice(0, 3)}
-                                                                </div>
-                                                                <span className="text-xs font-medium text-gray-700 text-center leading-tight">{bank.name.replace('Bank ', '')}</span>
-                                                                {paymentMethod === 'va' && selectedBank === bank.code && (
-                                                                    <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
-                                                                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                                        </svg>
+                                                                <>
+                                                                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-white">
+                                                                        <img
+                                                                            src={`/banks/${bank.code}.png`}
+                                                                            alt={bank.name}
+                                                                            className="w-full h-full object-contain p-0.5"
+                                                                            onError={e => {
+                                                                                const el = e.target as HTMLImageElement;
+                                                                                el.style.display = 'none';
+                                                                                const parent = el.parentElement!;
+                                                                                parent.style.backgroundColor = bank.color;
+                                                                                parent.innerText = bank.code.toUpperCase().slice(0, 3);
+                                                                                parent.style.color = 'white';
+                                                                                parent.style.fontSize = '10px';
+                                                                                parent.style.fontWeight = 'bold';
+                                                                                parent.style.display = 'flex';
+                                                                                parent.style.alignItems = 'center';
+                                                                                parent.style.justifyContent = 'center';
+                                                                            }}
+                                                                        />
                                                                     </div>
-                                                                )}
+                                                                    <span className="text-xs font-medium text-gray-700 text-center leading-tight">{bank.name.replace('Bank ', '')}</span>
+                                                                    {paymentMethod === 'va' && selectedBank === bank.code && (
+                                                                        <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1169,14 +1204,23 @@ function SettingsContent() {
                                                             setShowMethodSheet(false);
                                                         }}
                                                         className={`w-full flex items-center gap-4 py-3 px-4 rounded-xl border-2 transition-all ${paymentMethod === 'qris'
-                                                                ? 'border-purple-500 bg-purple-50'
-                                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                                            ? 'border-purple-500 bg-purple-50'
+                                                            : 'border-gray-200 bg-white hover:border-gray-300'
                                                             }`}
                                                     >
-                                                        <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center text-2xl flex-shrink-0">
-                                                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
-                                                            </svg>
+                                                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
+                                                            <img src="/banks/qris.png" alt="QRIS" className="w-full h-full object-contain p-1"
+                                                                onError={e => {
+                                                                    const el = e.target as HTMLImageElement;
+                                                                    el.style.display = 'none';
+                                                                    const parent = el.parentElement!;
+                                                                    parent.style.backgroundColor = '#111827';
+                                                                    parent.style.display = 'flex';
+                                                                    parent.style.alignItems = 'center';
+                                                                    parent.style.justifyContent = 'center';
+                                                                    parent.innerHTML = '<span style="color:white;font-size:11px;font-weight:bold;">QRIS</span>';
+                                                                }}
+                                                            />
                                                         </div>
                                                         <div className="text-left">
                                                             <p className="text-sm font-semibold text-gray-900">QRIS</p>
