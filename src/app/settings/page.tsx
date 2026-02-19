@@ -1072,7 +1072,7 @@ function SettingsContent() {
                                             {paymentMethod === 'qris' ? (
                                                 <>
                                                     <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
-                                                        <img src="/banks/qris.png" alt="QRIS" className="w-full h-full object-contain p-1"
+                                                        <img src="/banks/qris.jpg" alt="QRIS" className="w-full h-full object-contain p-1"
                                                             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerText = 'QR'; }} />
                                                     </div>
                                                     <div className="text-left">
@@ -1209,7 +1209,7 @@ function SettingsContent() {
                                                             }`}
                                                     >
                                                         <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 bg-white flex-shrink-0">
-                                                            <img src="/banks/qris.png" alt="QRIS" className="w-full h-full object-contain p-1"
+                                                            <img src="/banks/qris.jpg" alt="QRIS" className="w-full h-full object-contain p-1"
                                                                 onError={e => {
                                                                     const el = e.target as HTMLImageElement;
                                                                     el.style.display = 'none';
