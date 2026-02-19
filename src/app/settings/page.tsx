@@ -72,8 +72,8 @@ function SettingsContent() {
         service_charge_enabled: false,
         service_charge_rate: 10,
         service_charge_label: '',
-        raw_material_enabled: false,
-        stock_enabled: false,
+        raw_material_enabled: true,
+        stock_enabled: true,
     });
     const [savingQris, setSavingQris] = useState(false);
     const [uploadingQris, setUploadingQris] = useState(false);

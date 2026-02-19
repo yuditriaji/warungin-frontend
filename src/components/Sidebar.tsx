@@ -69,7 +69,6 @@ const menuItems: SidebarItem[] = [
         ),
         roles: ['owner', 'manager'],
         minPlan: ['pemula', 'bisnis', 'enterprise'],
-        hideForServiceBusiness: true,
         requiresStockEnabled: true,
     },
     {
@@ -82,7 +81,6 @@ const menuItems: SidebarItem[] = [
         ),
         roles: ['owner', 'manager'],
         minPlan: ['pemula', 'bisnis', 'enterprise'],
-        hideForServiceBusiness: true,
         requiresRawMaterialEnabled: true,
     },
     {
