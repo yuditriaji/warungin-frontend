@@ -1690,6 +1690,8 @@ export interface TenantSettings {
     service_charge_enabled: boolean;
     service_charge_rate: number;
     service_charge_label: string;
+    raw_material_enabled: boolean;
+    stock_enabled: boolean;
 }
 
 // Tenant Settings API
@@ -1698,12 +1700,12 @@ export const getTenantSettings = async (): Promise<TenantSettings> => {
         const response = await fetchWithAuth('/api/v1/tenant/settings');
         if (response.ok) {
             const data = await response.json();
-            return data.data || { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '', service_charge_enabled: false, service_charge_rate: 10, service_charge_label: '' };
+            return data.data || { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '', service_charge_enabled: false, service_charge_rate: 10, service_charge_label: '', raw_material_enabled: false, stock_enabled: false };
         }
     } catch (error) {
         console.error('Failed to fetch tenant settings:', error);
     }
-    return { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '', service_charge_enabled: false, service_charge_rate: 10, service_charge_label: '' };
+    return { qris_enabled: false, qris_image_url: '', qris_label: '', tax_enabled: false, tax_rate: 11, tax_label: '', service_charge_enabled: false, service_charge_rate: 10, service_charge_label: '', raw_material_enabled: false, stock_enabled: false };
 };
 
 export const updateTenantSettings = async (settings: Partial<TenantSettings>): Promise<TenantSettings | null> => {

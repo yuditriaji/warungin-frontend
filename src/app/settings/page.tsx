@@ -71,7 +71,9 @@ function SettingsContent() {
         tax_label: '',
         service_charge_enabled: false,
         service_charge_rate: 10,
-        service_charge_label: ''
+        service_charge_label: '',
+        raw_material_enabled: false,
+        stock_enabled: false,
     });
     const [savingQris, setSavingQris] = useState(false);
     const [uploadingQris, setUploadingQris] = useState(false);
@@ -740,6 +742,76 @@ function SettingsContent() {
                         </div>
                     </div>
 
+                    {/* Raw Material Feature Toggle Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-4">Fitur Bahan Baku</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Aktifkan fitur manajemen bahan baku untuk melacak stok bahan, resep produk, dan biaya produksi.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Raw Material Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">Aktifkan Bahan Baku</p>
+                                    <p className="text-sm text-gray-500">Tampilkan menu bahan baku dan resep produk</p>
+                                </div>
+                                <button
+                                    onClick={() => setQrisSettings({ ...qrisSettings, raw_material_enabled: !qrisSettings.raw_material_enabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.raw_material_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                >
+                                    <span
+                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.raw_material_enabled ? 'left-7' : 'left-1'}`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveQrisSettings}
+                                disabled={savingQris}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Bahan Baku'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stock Feature Toggle Section */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <h2 className="font-semibold text-gray-900 mb-4">Fitur Stok Produk</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Aktifkan pencatatan dan manajemen stok produk untuk memantau ketersediaan dan nilai inventori.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Stock Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">Aktifkan Stok Produk</p>
+                                    <p className="text-sm text-gray-500">Tampilkan menu stok dan manajemen inventori</p>
+                                </div>
+                                <button
+                                    onClick={() => setQrisSettings({ ...qrisSettings, stock_enabled: !qrisSettings.stock_enabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.stock_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                >
+                                    <span
+                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.stock_enabled ? 'left-7' : 'left-1'}`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveQrisSettings}
+                                disabled={savingQris}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Stok'}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Referral Code Section */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
                         <h2 className="font-semibold text-gray-900 mb-1">Kode Referral</h2>
@@ -795,8 +867,8 @@ function SettingsContent() {
 
                                 {referralValidResult && (
                                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${referralValidResult.valid
-                                            ? 'bg-green-50 text-green-700'
-                                            : 'bg-red-50 text-red-600'
+                                        ? 'bg-green-50 text-green-700'
+                                        : 'bg-red-50 text-red-600'
                                         }`}>
                                         {referralValidResult.valid ? (
                                             <>
