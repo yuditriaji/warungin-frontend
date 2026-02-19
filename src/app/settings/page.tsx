@@ -36,6 +36,7 @@ function SettingsContent() {
     // Payment method state
     const [paymentMethod, setPaymentMethod] = useState<'qris' | 'va'>('qris');
     const [selectedBank, setSelectedBank] = useState<VABankCode>('mandiri');
+    const [showMethodSheet, setShowMethodSheet] = useState(false);
 
     // QRIS modal state
     const [qrisData, setQrisData] = useState<QRISSubscriptionResponse | null>(null);
@@ -1062,54 +1063,138 @@ function SettingsContent() {
                                 {/* Payment Method Selector */}
                                 <div className="mt-4">
                                     <p className="text-sm font-medium text-gray-700 mb-2">Metode Pembayaran:</p>
-                                    <div className="flex gap-2 mb-3">
-                                        <button
-                                            onClick={() => setPaymentMethod('qris')}
-                                            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all ${paymentMethod === 'qris'
-                                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            📱 QRIS
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentMethod('va')}
-                                            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all ${paymentMethod === 'va'
-                                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            🏦 Virtual Account
-                                        </button>
-                                    </div>
+                                    {/* Selected method display row */}
+                                    <button
+                                        onClick={() => setShowMethodSheet(true)}
+                                        className="w-full flex items-center justify-between px-4 py-3 border-2 border-purple-200 bg-purple-50 rounded-xl hover:border-purple-400 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {paymentMethod === 'qris' ? (
+                                                <>
+                                                    <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl">📱</div>
+                                                    <div className="text-left">
+                                                        <p className="text-sm font-semibold text-gray-900">QRIS</p>
+                                                        <p className="text-xs text-gray-500">Scan dari e-wallet atau mobile banking</p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div
+                                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                                                        style={{ backgroundColor: VA_BANKS.find(b => b.code === selectedBank)?.color || '#7C3AED' }}
+                                                    >
+                                                        {selectedBank.toUpperCase().slice(0, 3)}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-sm font-semibold text-gray-900">{VA_BANKS.find(b => b.code === selectedBank)?.name}</p>
+                                                        <p className="text-xs text-gray-500">Virtual Account</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 text-purple-600 text-xs font-medium">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Ganti
+                                        </div>
+                                    </button>
+                                </div>
 
-                                    {paymentMethod === 'va' && (
-                                        <div className="space-y-2">
-                                            <p className="text-xs text-gray-500">Pilih Bank:</p>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {VA_BANKS.map((bank) => (
+                                {/* Payment Method Bottom Sheet */}
+                                {showMethodSheet && (
+                                    <div
+                                        className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+                                        onClick={() => setShowMethodSheet(false)}
+                                    >
+                                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                                        <div
+                                            className="relative bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-slide-up"
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            {/* Sheet Header */}
+                                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                                                <h4 className="text-base font-bold text-gray-900">Pilih Metode Pembayaran</h4>
+                                                <button
+                                                    onClick={() => setShowMethodSheet(false)}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+
+                                            <div className="px-6 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
+                                                {/* Bank Transfer */}
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Bank Transfer</p>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {VA_BANKS.map(bank => (
+                                                            <button
+                                                                key={bank.code}
+                                                                onClick={() => {
+                                                                    setPaymentMethod('va');
+                                                                    setSelectedBank(bank.code);
+                                                                    setShowMethodSheet(false);
+                                                                }}
+                                                                className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border-2 transition-all ${paymentMethod === 'va' && selectedBank === bank.code
+                                                                        ? 'border-purple-500 bg-purple-50'
+                                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                                    }`}
+                                                            >
+                                                                <div
+                                                                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm"
+                                                                    style={{ backgroundColor: bank.color }}
+                                                                >
+                                                                    {bank.code.toUpperCase().slice(0, 3)}
+                                                                </div>
+                                                                <span className="text-xs font-medium text-gray-700 text-center leading-tight">{bank.name.replace('Bank ', '')}</span>
+                                                                {paymentMethod === 'va' && selectedBank === bank.code && (
+                                                                    <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                                                                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* QRIS */}
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">QR Code</p>
                                                     <button
-                                                        key={bank.code}
-                                                        onClick={() => setSelectedBank(bank.code)}
-                                                        className={`py-2 px-2 rounded-lg text-xs font-medium border-2 transition-all ${selectedBank === bank.code
-                                                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                        onClick={() => {
+                                                            setPaymentMethod('qris');
+                                                            setShowMethodSheet(false);
+                                                        }}
+                                                        className={`w-full flex items-center gap-4 py-3 px-4 rounded-xl border-2 transition-all ${paymentMethod === 'qris'
+                                                                ? 'border-purple-500 bg-purple-50'
+                                                                : 'border-gray-200 bg-white hover:border-gray-300'
                                                             }`}
                                                     >
-                                                        {bank.name}
+                                                        <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center text-2xl flex-shrink-0">
+                                                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="text-sm font-semibold text-gray-900">QRIS</p>
+                                                            <p className="text-xs text-gray-500">Scan dari semua e-wallet & mobile banking</p>
+                                                        </div>
+                                                        {paymentMethod === 'qris' && (
+                                                            <div className="ml-auto w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
                                                     </button>
-                                                ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
-
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        {paymentMethod === 'qris'
-                                            ? 'Scan QR dari e-wallet atau mobile banking'
-                                            : `Transfer ke Virtual Account ${VA_BANKS.find(b => b.code === selectedBank)?.name || ''}`
-                                        }
-                                    </p>
-                                </div>
+                                    </div>
+                                )}
 
                                 {/* Promo Code Input */}
                                 <div className="mt-4">
