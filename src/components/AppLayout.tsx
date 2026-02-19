@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
-import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet, getSubscription } from '@/lib/api';
+import { isAuthenticated, getCurrentUser, clearTokens, User, Tenant, Outlet, getOutlets, switchOutlet, getSubscription, getTenantSettings } from '@/lib/api';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -20,6 +20,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [outletDropdownOpen, setOutletDropdownOpen] = useState(false);
+    const [rawMaterialEnabled, setRawMaterialEnabled] = useState(false);
+    const [stockEnabled, setStockEnabled] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -43,6 +45,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 const subData = await getSubscription();
                 const plan = subData?.subscription?.plan || 'gratis';
                 setUserPlan(plan);
+
+                // Fetch tenant settings for feature flags
+                const tenantSettings = await getTenantSettings();
+                setRawMaterialEnabled(tenantSettings.raw_material_enabled ?? false);
+                setStockEnabled(tenantSettings.stock_enabled ?? false);
 
                 // Check if plan supports outlets (Bisnis or Enterprise only)
                 const isBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
@@ -94,6 +101,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 tenantName={tenant?.name}
                 isOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
+                rawMaterialEnabled={rawMaterialEnabled}
+                stockEnabled={stockEnabled}
             />
 
             {/* Main Content */}

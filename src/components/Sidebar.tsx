@@ -12,6 +12,8 @@ interface SidebarItem {
     minPlan?: string[]; // Plans that can access: ['gratis','pemula','bisnis','enterprise']
     hideForServiceBusiness?: boolean; // Hide this menu for service businesses
     serviceLabel?: string; // Alternative label for service businesses
+    requiresStockEnabled?: boolean;       // Only show when stock_enabled toggle is on
+    requiresRawMaterialEnabled?: boolean; // Only show when raw_material_enabled toggle is on
 }
 
 // Plan hierarchy for comparison
@@ -66,8 +68,8 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
-        minPlan: ['pemula', 'bisnis', 'enterprise'],
         hideForServiceBusiness: true,
+        requiresStockEnabled: true,
     },
     {
         name: 'Bahan Baku',
@@ -78,8 +80,8 @@ const menuItems: SidebarItem[] = [
             </svg>
         ),
         roles: ['owner', 'manager'],
-        minPlan: ['pemula', 'bisnis', 'enterprise'],
         hideForServiceBusiness: true,
+        requiresRawMaterialEnabled: true,
     },
     {
         name: 'Transaksi',
@@ -165,9 +167,11 @@ interface SidebarProps {
     tenantName?: string;
     isOpen?: boolean;
     onClose?: () => void;
+    rawMaterialEnabled?: boolean;
+    stockEnabled?: boolean;
 }
 
-export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', businessType = '', userName = '', tenantName = '', isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', businessType = '', userName = '', tenantName = '', isOpen = false, onClose, rawMaterialEnabled = false, stockEnabled = false }: SidebarProps) {
     const pathname = usePathname();
     const isServiceBusiness = checkIsServiceBusiness(businessType);
 
@@ -178,7 +182,10 @@ export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', busin
         const hasPlanAccess = !item.minPlan || item.minPlan.includes(userPlan);
         // Hide for service business
         const showForBusinessType = !item.hideForServiceBusiness || !isServiceBusiness;
-        return hasRoleAccess && hasPlanAccess && showForBusinessType;
+        // Feature toggle gates
+        const stockOk = !item.requiresStockEnabled || stockEnabled;
+        const rawMaterialOk = !item.requiresRawMaterialEnabled || rawMaterialEnabled;
+        return hasRoleAccess && hasPlanAccess && showForBusinessType && stockOk && rawMaterialOk;
     });
 
     // Transform menu names based on business type
