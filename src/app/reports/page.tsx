@@ -432,30 +432,32 @@ export default function ReportsPage() {
                                 Belum ada data penjualan
                             </div>
                         ) : (
-                            <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Produk</th>
-                                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Qty</th>
-                                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Penjualan</th>
-                                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Modal</th>
-                                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Laba</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {productReport.map((product) => (
-                                        <tr key={product.product_id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium text-gray-900">{product.product_name}</td>
-                                            <td className="px-4 py-3 text-right text-gray-600">{product.total_qty}</td>
-                                            <td className="px-4 py-3 text-right text-gray-900">{formatPrice(product.total_sales)}</td>
-                                            <td className="px-4 py-3 text-right text-gray-500">{formatPrice(product.total_cost)}</td>
-                                            <td className={`px-4 py-3 text-right font-medium ${product.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {formatPrice(product.profit)}
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Produk</th>
+                                            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Qty</th>
+                                            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Penjualan</th>
+                                            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Modal</th>
+                                            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Laba</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {productReport.map((product) => (
+                                            <tr key={product.product_id} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{product.product_name}</td>
+                                                <td className="px-4 py-3 text-right text-gray-600 whitespace-nowrap">{product.total_qty}</td>
+                                                <td className="px-4 py-3 text-right text-gray-900 whitespace-nowrap">{formatPrice(product.total_sales)}</td>
+                                                <td className="px-4 py-3 text-right text-gray-500 whitespace-nowrap">{formatPrice(product.total_cost)}</td>
+                                                <td className={`px-4 py-3 text-right font-medium whitespace-nowrap ${product.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {formatPrice(product.profit)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 </>
