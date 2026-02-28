@@ -347,10 +347,7 @@ function SettingsContent() {
 
     return (
         <AppLayout>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Pengaturan</h1>
-                <p className="text-gray-500">Kelola langganan dan penggunaan</p>
-            </div>
+            {/* Main title moved inside combined card */}
 
             {/* Payment Status Message */}
             {paymentMessage && (
@@ -373,450 +370,271 @@ function SettingsContent() {
                 </div>
             ) : (
                 <>
-                    {/* Subscription Status Banner */}
-                    {currentPlan !== 'gratis' && subscriptionData && (
-                        <div className={`mb-6 p-4 rounded-xl border ${subscriptionData.is_cancelled ? 'bg-orange-50 border-orange-200' : 'bg-purple-50 border-purple-200'}`}>
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${subscriptionData.is_cancelled ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                                            {subscriptionData.is_cancelled ? '⏳ Dibatalkan' : '✅ Aktif'}
-                                        </span>
-                                        <span className="text-sm text-gray-600">
-                                            {subscriptionData.billing_period === 'quarterly' ? '3 Bulan' : subscriptionData.billing_period === 'yearly' ? 'Tahunan' : 'Bulanan'}
-                                        </span>
+                    {/* Status Langganan & Penggunaan */}
+                    <div className="bg-white rounded-xl border border-gray-200 mb-6">
+                        <div className="p-6">
+                            <h2 className="text-xl font-bold text-gray-900 mb-1">Status Langganan</h2>
+                            <p className="text-gray-500 text-sm mb-6">Kelola langganan dan penggunaan</p>
+
+                            {/* Active Plan Banner */}
+                            {currentPlan !== 'gratis' && subscriptionData ? (
+                                <div className={`mb-8 p-4 rounded-xl border flex items-center justify-between flex-wrap gap-4 ${subscriptionData.is_cancelled ? 'bg-orange-50 border-orange-200' : 'bg-purple-50 border-purple-100'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`px-2 py-1 text-xs font-semibold rounded-md ${subscriptionData.is_cancelled ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                            Paket Aktif
+                                        </div>
+                                        <div className="font-bold text-gray-900">
+                                            {plans.find(p => p.id === currentPlan)?.name || 'Pemula'}
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-700 mt-1">
-                                        {subscriptionData.is_cancelled
-                                            ? `Berakhir pada ${formatDate(subscriptionData.current_period_end)}`
-                                            : `Berlaku hingga ${formatDate(subscriptionData.current_period_end)}`
-                                        }
-                                    </p>
-                                </div>
-                                <div>
-                                    {subscriptionData.is_cancelled ? (
-                                        <button
-                                            onClick={handleReactivate}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700"
-                                        >
-                                            Aktifkan Kembali
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => setShowCancelModal(true)}
-                                            className="px-4 py-2 border border-red-300 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50"
-                                        >
-                                            Batalkan Langganan
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Usage Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Penggunaan</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Users */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-gray-600">Pengguna</span>
-                                    <span className="text-gray-900">{usage?.users || 0} / {usage?.max_users === 0 ? '∞' : usage?.max_users}</span>
-                                </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full ${getUsageColor(getUsagePercent(usage?.users || 0, usage?.max_users || 1))}`}
-                                        style={{ width: `${getUsagePercent(usage?.users || 0, usage?.max_users || 1)}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Products */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-gray-600">Produk</span>
-                                    <span className="text-gray-900">{usage?.products || 0} / {usage?.max_products === 0 ? '∞' : usage?.max_products}</span>
-                                </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full ${getUsageColor(getUsagePercent(usage?.products || 0, usage?.max_products || 1))}`}
-                                        style={{ width: `${getUsagePercent(usage?.products || 0, usage?.max_products || 1)}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Transactions Today */}
-                            {(usage?.max_transactions_daily || 0) > 0 && (
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="text-gray-600">Transaksi Hari Ini</span>
-                                        <span className="text-gray-900">{usage?.transactions_today || 0} / {usage?.max_transactions_daily}</span>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-sm text-gray-600">
+                                            {subscriptionData.is_cancelled
+                                                ? `Berakhir pada ${formatDate(subscriptionData.current_period_end)}`
+                                                : `Berlaku hingga ${formatDate(subscriptionData.current_period_end)}`
+                                            }
+                                        </div>
+                                        {subscriptionData.is_cancelled ? (
+                                            <button
+                                                onClick={handleReactivate}
+                                                className="px-4 py-2 border border-green-300 text-green-600 bg-white rounded-xl text-sm font-medium hover:bg-green-50"
+                                            >
+                                                Aktifkan Kembali
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => setShowCancelModal(true)}
+                                                className="px-4 py-2 border border-red-200 text-red-600 bg-white rounded-xl text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors shadow-sm"
+                                            >
+                                                Batalkan Langganan
+                                            </button>
+                                        )}
                                     </div>
-                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full ${getUsageColor(getUsagePercent(usage?.transactions_today || 0, usage?.max_transactions_daily || 1))}`}
-                                            style={{ width: `${getUsagePercent(usage?.transactions_today || 0, usage?.max_transactions_daily || 1)}%` }}
-                                        />
+                                </div>
+                            ) : (
+                                <div className="mb-8 p-4 rounded-xl border bg-gray-50 border-gray-200 flex items-center justify-between flex-wrap gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 text-gray-700">
+                                            Paket Aktif
+                                        </div>
+                                        <div className="font-bold text-gray-900">
+                                            Gratis
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        Akses terbatas. Upgrade untuk fitur lengkap.
                                     </div>
                                 </div>
                             )}
 
-                            {/* Outlets */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-gray-600">Outlet</span>
-                                    <span className="text-gray-900">{usage?.outlets || 0} / {usage?.max_outlets === 0 ? '∞' : usage?.max_outlets}</span>
+                            {/* Usage Progress */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {/* Users */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="font-bold text-gray-900">Pengguna</span>
+                                        <span className="text-sm font-semibold text-gray-900">{usage?.users || 0} / {usage?.max_users === 0 ? '∞' : usage?.max_users}</span>
+                                    </div>
+                                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full ${getUsageColor(getUsagePercent(usage?.users || 0, usage?.max_users || 1))}`}
+                                            style={{ width: `${getUsagePercent(usage?.users || 0, usage?.max_users || 1)}%` }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full ${getUsageColor(getUsagePercent(usage?.outlets || 0, usage?.max_outlets || 1))}`}
-                                        style={{ width: `${getUsagePercent(usage?.outlets || 0, usage?.max_outlets || 1)}%` }}
-                                    />
+
+                                {/* Products */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="font-bold text-gray-900">Produk</span>
+                                        <span className="text-sm font-semibold text-gray-900">{usage?.products || 0} / {usage?.max_products === 0 ? '∞' : usage?.max_products}</span>
+                                    </div>
+                                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full ${getUsageColor(getUsagePercent(usage?.products || 0, usage?.max_products || 1))}`}
+                                            style={{ width: `${getUsagePercent(usage?.products || 0, usage?.max_products || 1)}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Outlets */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="font-bold text-gray-900">Outlet</span>
+                                        <span className="text-sm font-semibold text-gray-900">{usage?.outlets || 0} / {usage?.max_outlets === 0 ? '∞' : usage?.max_outlets}</span>
+                                    </div>
+                                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full ${getUsageColor(getUsagePercent(usage?.outlets || 0, usage?.max_outlets || 1))}`}
+                                            style={{ width: `${getUsagePercent(usage?.outlets || 0, usage?.max_outlets || 1)}%` }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* QRIS Settings Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan QRIS</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Gunakan QRIS milik Anda sendiri untuk menerima pembayaran langsung ke rekening Anda.
-                        </p>
+                    {/* Konfigurasi Fitur */}
+                    <div className="mb-4 mt-2">
+                        <h2 className="text-xl font-bold text-gray-900">Konfigurasi Fitur</h2>
+                    </div>
 
-                        <div className="space-y-4">
-                            {/* Enable Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Aktifkan QRIS</p>
-                                    <p className="text-sm text-gray-500">Tampilkan opsi pembayaran QRIS di kasir</p>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                        {/* QRIS */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                                <h3 className="font-bold text-gray-900 text-base">QRIS</h3>
                                 <button
                                     onClick={() => setQrisSettings({ ...qrisSettings, qris_enabled: !qrisSettings.qris_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.qris_enabled ? 'bg-purple-600' : 'bg-gray-200'
-                                        }`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.qris_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
                                 >
-                                    <span
-                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.qris_enabled ? 'left-7' : 'left-1'
-                                            }`}
-                                    />
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.qris_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                Aktifkan QRIS milik Anda untuk menerima pembayaran langsung ke rekening Anda.
+                            </p>
 
                             {qrisSettings.qris_enabled && (
-                                <>
+                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
                                     {/* QRIS Image Upload */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Gambar QRIS
-                                        </label>
-
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleFileUpload}
-                                            className="hidden"
-                                        />
-
+                                        <label className="block text-xs font-semibold text-gray-700 mb-2">Gambar QRIS</label>
+                                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                                         {qrisSettings.qris_image_url ? (
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
-                                                    <img
-                                                        src={qrisSettings.qris_image_url}
-                                                        alt="QRIS Preview"
-                                                        className="w-full h-full object-contain"
-                                                    />
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                                                    <img src={qrisSettings.qris_image_url} alt="QRIS" className="w-full h-full object-contain" />
                                                 </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <button
-                                                        onClick={() => fileInputRef.current?.click()}
-                                                        disabled={uploadingQris}
-                                                        className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
-                                                    >
-                                                        {uploadingQris ? 'Mengupload...' : 'Ganti Gambar'}
-                                                    </button>
-                                                    <p className="text-xs text-gray-600">
-                                                        Maks. 500KB
-                                                    </p>
+                                                <div className="flex flex-col gap-1">
+                                                    <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50">Ganti Foto</button>
+                                                    <p className="text-[10px] text-gray-500">Maks. 500KB</p>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <button
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={uploadingQris}
-                                                className="w-full py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-colors disabled:opacity-50"
-                                            >
-                                                <div className="flex flex-col items-center gap-2">
-                                                    {uploadingQris ? (
-                                                        <>
-                                                            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                                                            <span className="text-sm text-gray-500">Mengupload...</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                            </svg>
-                                                            <span className="text-sm text-gray-600 font-medium">Klik untuk upload gambar QRIS</span>
-                                                            <span className="text-xs text-gray-600">PNG, JPG (Maks. 500KB)</span>
-                                                        </>
-                                                    )}
+                                            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    {uploadingQris ? <span className="text-xs text-gray-500">Mengupload...</span> : <span className="text-xs font-medium text-gray-600">Upload QRIS (Maks 500KB)</span>}
                                                 </div>
                                             </button>
                                         )}
                                     </div>
-
-                                    {/* QRIS Label */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Label QRIS
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={qrisSettings.qris_label}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })}
-                                            placeholder="BCA QRIS, DANA, GoPay, dll"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
-                                        />
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label QRIS</label>
+                                        <input type="text" value={qrisSettings.qris_label} onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })} placeholder="BCA QRIS..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
                                     </div>
-                                </>
-                            )}
-
-                            {/* Save Button */}
-                            <button
-                                onClick={handleSaveQrisSettings}
-                                disabled={savingQris}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
-                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan QRIS'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* PPN/Tax Settings Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan PPN/Pajak</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Aktifkan pajak untuk menerapkan PPN otomatis ke semua transaksi penjualan. Cocok untuk PKP (Pengusaha Kena Pajak).
-                        </p>
-
-                        <div className="space-y-4">
-                            {/* Tax Enable Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Aktifkan PPN</p>
-                                    <p className="text-sm text-gray-500">Tambahkan pajak otomatis ke setiap transaksi</p>
+                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan QRIS</button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* PPN */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                                <h3 className="font-bold text-gray-900 text-base">PPN/Pajak</h3>
                                 <button
                                     onClick={() => setQrisSettings({ ...qrisSettings, tax_enabled: !qrisSettings.tax_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.tax_enabled ? 'bg-purple-600' : 'bg-gray-200'
-                                        }`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.tax_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
                                 >
-                                    <span
-                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.tax_enabled ? 'left-7' : 'left-1'
-                                            }`}
-                                    />
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.tax_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                Aktifkan PPN otomatis ke semua transaksi. Pas untuk PKP (Pengusaha Kena Pajak).
+                            </p>
 
                             {qrisSettings.tax_enabled && (
-                                <>
-                                    {/* Tax Rate Input */}
+                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Tarif Pajak (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                            value={qrisSettings.tax_rate || 11}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, tax_rate: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
-                                            placeholder="11"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">PPN standar Indonesia: 11%</p>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
+                                        <input type="number" min="0" step="0.1" value={qrisSettings.tax_rate || 11} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
                                     </div>
-
-                                    {/* Tax Label */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Label Pajak
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={qrisSettings.tax_label || ''}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, tax_label: e.target.value })}
-                                            placeholder="PPN 11%"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Label ini akan muncul di struk dan laporan</p>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
+                                        <input type="text" value={qrisSettings.tax_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_label: e.target.value })} placeholder="PPN 11%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
                                     </div>
-                                </>
-                            )}
-
-                            {/* Save Button */}
-                            <button
-                                onClick={handleSaveQrisSettings}
-                                disabled={savingQris}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
-                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Pajak'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Service Charge Settings Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Pengaturan Service Charge</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Aktifkan service charge untuk menambahkan biaya layanan ke setiap transaksi. Umum digunakan di restoran dan kafe.
-                        </p>
-
-                        <div className="space-y-4">
-                            {/* Service Charge Enable Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Aktifkan Service Charge</p>
-                                    <p className="text-sm text-gray-500">Tambahkan biaya layanan ke setiap transaksi</p>
+                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan PPN</button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Service Charge */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                                <h3 className="font-bold text-gray-900 text-base">Service Charge</h3>
                                 <button
                                     onClick={() => setQrisSettings({ ...qrisSettings, service_charge_enabled: !qrisSettings.service_charge_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.service_charge_enabled ? 'bg-purple-600' : 'bg-gray-200'
-                                        }`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.service_charge_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
                                 >
-                                    <span
-                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.service_charge_enabled ? 'left-7' : 'left-1'
-                                            }`}
-                                    />
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.service_charge_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                Aktifkan service charge untuk menambah biaya layanan ke setiap transaksi (Resto/Kafe).
+                            </p>
 
                             {qrisSettings.service_charge_enabled && (
-                                <>
-                                    {/* Service Charge Rate Input */}
+                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Tarif Service Charge (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="0.5"
-                                            value={qrisSettings.service_charge_rate || 10}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_rate: parseFloat(e.target.value) || 0 })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
-                                            placeholder="10"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Umumnya 5% - 10% di Indonesia</p>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
+                                        <input type="number" min="0" step="0.5" value={qrisSettings.service_charge_rate || 10} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
                                     </div>
-
-                                    {/* Service Charge Label */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Label Service Charge
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={qrisSettings.service_charge_label || ''}
-                                            onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_label: e.target.value })}
-                                            placeholder="Service 10%"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Label ini akan muncul di struk dan laporan</p>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
+                                        <input type="text" value={qrisSettings.service_charge_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_label: e.target.value })} placeholder="Service 10%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
                                     </div>
-                                </>
-                            )}
-
-                            {/* Save Button */}
-                            <button
-                                onClick={handleSaveQrisSettings}
-                                disabled={savingQris}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
-                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Service Charge'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Raw Material Feature Toggle Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Fitur Bahan Baku</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Aktifkan fitur manajemen bahan baku untuk melacak stok bahan, resep produk, dan biaya produksi.
-                        </p>
-
-                        <div className="space-y-4">
-                            {/* Raw Material Enable Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Aktifkan Bahan Baku</p>
-                                    <p className="text-sm text-gray-500">Tampilkan menu bahan baku dan resep produk</p>
+                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Service</button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Bahan Baku */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                                <h3 className="font-bold text-gray-900 text-base">Bahan Baku</h3>
                                 <button
                                     onClick={() => setQrisSettings({ ...qrisSettings, raw_material_enabled: !qrisSettings.raw_material_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.raw_material_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.raw_material_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
                                 >
-                                    <span
-                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.raw_material_enabled ? 'left-7' : 'left-1'}`}
-                                    />
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.raw_material_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
-
-                            {/* Save Button */}
-                            <button
-                                onClick={handleSaveQrisSettings}
-                                disabled={savingQris}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
-                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Bahan Baku'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Stock Feature Toggle Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-4">Fitur Stok Produk</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Aktifkan pencatatan dan manajemen stok produk untuk memantau ketersediaan dan nilai inventori.
-                        </p>
-
-                        <div className="space-y-4">
-                            {/* Stock Enable Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Aktifkan Stok Produk</p>
-                                    <p className="text-sm text-gray-500">Tampilkan menu stok dan manajemen inventori</p>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                Aktifkan pencatatan bahan baku untuk melacak stok bahan, resep, dan biaya produk.
+                            </p>
+                            {qrisSettings.raw_material_enabled && (
+                                <div className="mt-1 pt-4 border-t border-gray-100">
+                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Perubahan</button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Stok Produk */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                                <h3 className="font-bold text-gray-900 text-base">Stok Produk</h3>
                                 <button
                                     onClick={() => setQrisSettings({ ...qrisSettings, stock_enabled: !qrisSettings.stock_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${qrisSettings.stock_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.stock_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
                                 >
-                                    <span
-                                        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.stock_enabled ? 'left-7' : 'left-1'}`}
-                                    />
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.stock_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
-
-                            {/* Save Button */}
-                            <button
-                                onClick={handleSaveQrisSettings}
-                                disabled={savingQris}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
-                                {savingQris ? 'Menyimpan...' : 'Simpan Pengaturan Stok'}
-                            </button>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                Aktifkan pencatatan dan manajemen stok produk untuk memantau ketersediaan dan nilai inventori.
+                            </p>
+                            {qrisSettings.stock_enabled && (
+                                <div className="mt-1 pt-4 border-t border-gray-100">
+                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Perubahan</button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Referral Code Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <h2 className="font-semibold text-gray-900 mb-1">Kode Referral</h2>
-                        <p className="text-sm text-gray-500 mb-4">Masukkan kode referral dari affiliator untuk mendapatkan keuntungan</p>
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+                        <h2 className="text-xl font-bold text-gray-900 mb-1">Kode Referral</h2>
+                        <p className="text-sm text-gray-500 mb-6">Masukkan kode referral dari affiliator untuk memberikan keuntungan pada pengguna.</p>
 
                         {referralStatus.has_referral ? (
                             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
@@ -847,7 +665,7 @@ function SettingsContent() {
                                             setReferralMessage('');
                                         }}
                                         placeholder="Masukkan kode referral"
-                                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono tracking-wider uppercase"
+                                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono tracking-wider uppercase text-gray-900"
                                         maxLength={10}
                                     />
                                     <button
@@ -860,16 +678,16 @@ function SettingsContent() {
                                             setReferralValidating(false);
                                         }}
                                         disabled={!referralInput.trim() || referralValidating}
-                                        className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                        className="px-6 py-3 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
                                     >
                                         {referralValidating ? 'Cek...' : 'Validasi'}
                                     </button>
                                 </div>
 
                                 {referralValidResult && (
-                                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${referralValidResult.valid
-                                        ? 'bg-green-50 text-green-700'
-                                        : 'bg-red-50 text-red-600'
+                                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm ${referralValidResult.valid
+                                        ? 'bg-green-50 text-green-700 border border-green-200'
+                                        : 'bg-red-50 text-red-600 border border-red-200'
                                         }`}>
                                         {referralValidResult.valid ? (
                                             <>
@@ -899,14 +717,14 @@ function SettingsContent() {
                                             setReferralSaving(false);
                                         }}
                                         disabled={referralSaving}
-                                        className="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                                        className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                                     >
                                         {referralSaving ? 'Menyimpan...' : 'Terapkan Kode Referral'}
                                     </button>
                                 )}
 
                                 {referralMessage && (
-                                    <div className={`text-sm px-3 py-2 rounded-lg ${referralMessage.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                                    <div className={`text-sm px-4 py-3 rounded-xl border ${referralMessage.startsWith('✅') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
                                         {referralMessage}
                                     </div>
                                 )}
