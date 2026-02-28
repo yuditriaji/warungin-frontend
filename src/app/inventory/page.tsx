@@ -217,59 +217,61 @@ export default function InventoryPage() {
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Produk</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stok</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nilai</th>
-                                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {inventory.map((item) => (
-                                <tr key={item.product_id} className="hover:bg-gray-50">
-                                    <td className="px-4 py-3">
-                                        <p className="font-medium text-gray-900">{item.product_name}</p>
-                                        {item.sku && <p className="text-xs text-gray-500">{item.sku}</p>}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                        {item.use_material_stock ? (
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
-                                                <span className="text-xs text-blue-600 flex items-center gap-1">
-                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                    </svg>
-                                                    dari bahan
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
-                                    <td className="px-4 py-3 text-right text-gray-600">{formatPrice(item.stock_value)}</td>
-                                    <td className="px-4 py-3 text-right">
-                                        {item.use_material_stock ? (
-                                            <span className="text-xs text-gray-400">Kelola di Bahan Baku</span>
-                                        ) : (
-                                            <button
-                                                onClick={() => {
-                                                    setAdjustModal({ item, open: true });
-                                                    setAdjustQty(0);
-                                                }}
-                                                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                                            >
-                                                Ubah Stok
-                                            </button>
-                                        )}
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[700px]">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Produk</th>
+                                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stok</th>
+                                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nilai</th>
+                                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {inventory.map((item) => (
+                                    <tr key={item.product_id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3">
+                                            <p className="font-medium text-gray-900">{item.product_name}</p>
+                                            {item.sku && <p className="text-xs text-gray-500">{item.sku}</p>}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            {item.use_material_stock ? (
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
+                                                    <span className="text-xs text-blue-600 flex items-center gap-1">
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                        </svg>
+                                                        dari bahan
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-lg font-bold text-gray-900">{item.stock_qty}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
+                                        <td className="px-4 py-3 text-right text-gray-600">{formatPrice(item.stock_value)}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            {item.use_material_stock ? (
+                                                <span className="text-xs text-gray-400">Kelola di Bahan Baku</span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        setAdjustModal({ item, open: true });
+                                                        setAdjustQty(0);
+                                                    }}
+                                                    className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                                                >
+                                                    Ubah Stok
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
