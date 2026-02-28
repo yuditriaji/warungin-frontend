@@ -129,6 +129,11 @@ function SettingsContent() {
     };
 
     const handleSaveQrisSettings = async () => {
+        if (qrisSettings.qris_enabled && !qrisSettings.qris_image_url) {
+            alert('Silakan upload gambar QRIS sebelum menyimpan konfigurasi.');
+            return;
+        }
+
         setSavingQris(true);
         await updateTenantSettings(qrisSettings);
         setSavingQris(false);
