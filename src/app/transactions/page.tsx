@@ -186,63 +186,65 @@ export default function TransactionsPage() {
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Invoice</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Tanggal</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Items</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Pembayaran</th>
-                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                                <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
-                                <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {transactions.map((tx) => (
-                                <tr key={tx.id} className={`hover:bg-gray-50 ${tx.status === 'voided' ? 'opacity-50' : ''}`}>
-                                    <td className="px-6 py-4">
-                                        <span className="font-mono text-sm text-gray-900">{tx.invoice_number}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {formatDate(tx.created_at)}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {tx.items?.length || 0} item
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tx.payment_method === 'cash'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-purple-100 text-purple-700'
-                                            }`}>
-                                            {tx.payment_method === 'cash' ? '💵 Tunai' : '📱 ' + tx.payment_method.toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {getStatusBadge(tx.status)}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className={`font-semibold ${tx.status === 'voided' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                                            {formatPrice(tx.total)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        {canVoid(tx) && (
-                                            <button
-                                                onClick={() => openVoidModal(tx)}
-                                                className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                Batalkan
-                                            </button>
-                                        )}
-                                        {tx.status === 'voided' && (
-                                            <span className="text-xs text-gray-400">Dibatalkan</span>
-                                        )}
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[700px]">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Invoice</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Tanggal</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Items</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Pembayaran</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
+                                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {transactions.map((tx) => (
+                                    <tr key={tx.id} className={`hover:bg-gray-50 ${tx.status === 'voided' ? 'opacity-50' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-sm text-gray-900">{tx.invoice_number}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                            {formatDate(tx.created_at)}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                            {tx.items?.length || 0} item
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tx.payment_method === 'cash'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-purple-100 text-purple-700'
+                                                }`}>
+                                                {tx.payment_method === 'cash' ? '💵 Tunai' : '📱 ' + tx.payment_method.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {getStatusBadge(tx.status)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className={`font-semibold ${tx.status === 'voided' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                                {formatPrice(tx.total)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {canVoid(tx) && (
+                                                <button
+                                                    onClick={() => openVoidModal(tx)}
+                                                    className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    Batalkan
+                                                </button>
+                                            )}
+                                            {tx.status === 'voided' && (
+                                                <span className="text-xs text-gray-400">Dibatalkan</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
