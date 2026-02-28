@@ -78,6 +78,7 @@ function SettingsContent() {
     });
     const [savingQris, setSavingQris] = useState(false);
     const [uploadingQris, setUploadingQris] = useState(false);
+    const [qrisError, setQrisError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Referral code state
@@ -129,8 +130,9 @@ function SettingsContent() {
     };
 
     const handleSaveQrisSettings = async () => {
+        setQrisError('');
         if (qrisSettings.qris_enabled && !qrisSettings.qris_image_url) {
-            alert('Silakan upload gambar QRIS sebelum menyimpan konfigurasi.');
+            setQrisError('Silakan upload gambar QRIS sebelum menyimpan konfigurasi.');
             return;
         }
 
@@ -626,7 +628,17 @@ function SettingsContent() {
                         </div>
 
                         {/* Save Button for Konfigurasi Fitur */}
-                        <div className="flex justify-end pt-4 border-t border-gray-200">
+                        <div className="flex flex-col items-end pt-4 border-t border-gray-200">
+                            {qrisError && (
+                                <div className="mb-3 text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg border border-red-200 flex items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    {qrisError}
+                                </div>
+                            )}
                             <button
                                 onClick={handleSaveQrisSettings}
                                 disabled={savingQris}
