@@ -183,6 +183,7 @@ export interface UpdateTenantInput {
     city_name?: string;
     postal_code?: string;
     referral_code?: string;
+    user_agreement_accepted?: boolean;
 }
 
 export const updateTenantProfile = async (input: UpdateTenantInput): Promise<Tenant | null> => {

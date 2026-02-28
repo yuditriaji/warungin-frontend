@@ -29,6 +29,9 @@ export default function OnboardingPage() {
     const [referralValid, setReferralValid] = useState<boolean | null>(null);
     const [validatingReferral, setValidatingReferral] = useState(false);
 
+    // User agreement
+    const [agreementAccepted, setAgreementAccepted] = useState(false);
+
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -170,6 +173,7 @@ export default function OnboardingPage() {
             city_name: selectedCity?.name,
             postal_code: postalCode,
             referral_code: referralValid ? referralCode : undefined,
+            user_agreement_accepted: agreementAccepted,
         });
 
         if (result) {
@@ -383,6 +387,22 @@ export default function OnboardingPage() {
                         )}
                     </div>
 
+                    {/* User Agreement */}
+                    <div className="flex items-start gap-3 mt-6 mb-2">
+                        <div className="flex items-center h-5 mt-1">
+                            <input
+                                id="agreement"
+                                type="checkbox"
+                                checked={agreementAccepted}
+                                onChange={(e) => setAgreementAccepted(e.target.checked)}
+                                className="w-5 h-5 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                            />
+                        </div>
+                        <label htmlFor="agreement" className="text-sm text-gray-600 leading-relaxed cursor-pointer">
+                            Saya menyetujui <a href="#" className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Syarat dan Ketentuan</a> serta <a href="#" className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Kebijakan Privasi</a> aplikasi Warungin.
+                        </label>
+                    </div>
+
                     {/* Error */}
                     {error && (
                         <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">
@@ -393,8 +413,8 @@ export default function OnboardingPage() {
                     {/* Submit */}
                     <button
                         type="submit"
-                        disabled={saving}
-                        className="w-full py-4 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        disabled={saving || !agreementAccepted}
+                        className="w-full py-4 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                     >
                         {saving ? (
                             <>
