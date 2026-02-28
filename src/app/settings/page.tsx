@@ -479,155 +479,155 @@ function SettingsContent() {
                         <h2 className="text-xl font-bold text-gray-900">Konfigurasi Fitur</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                        {/* QRIS */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
-                            <div className="flex justify-between items-start gap-4 mb-2">
-                                <h3 className="font-bold text-gray-900 text-base">QRIS</h3>
-                                <button
-                                    onClick={() => setQrisSettings({ ...qrisSettings, qris_enabled: !qrisSettings.qris_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.qris_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.qris_enabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
-                                Aktifkan QRIS milik Anda untuk menerima pembayaran langsung ke rekening Anda.
-                            </p>
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            {/* QRIS */}
+                            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 flex flex-col transition-all">
+                                <div className="flex justify-between items-start gap-4 mb-2">
+                                    <h3 className="font-bold text-gray-900 text-base">QRIS</h3>
+                                    <button
+                                        onClick={() => setQrisSettings({ ...qrisSettings, qris_enabled: !qrisSettings.qris_enabled })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.qris_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    >
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.qris_enabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                    Aktifkan QRIS milik Anda untuk menerima pembayaran langsung ke rekening Anda.
+                                </p>
 
-                            {qrisSettings.qris_enabled && (
-                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
-                                    {/* QRIS Image Upload */}
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-2">Gambar QRIS</label>
-                                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                                        {qrisSettings.qris_image_url ? (
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-                                                    <img src={qrisSettings.qris_image_url} alt="QRIS" className="w-full h-full object-contain" />
+                                {qrisSettings.qris_enabled && (
+                                    <div className="mt-1 pt-4 border-t border-gray-200 space-y-4">
+                                        {/* QRIS Image Upload */}
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-2">Gambar QRIS</label>
+                                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                                            {qrisSettings.qris_image_url ? (
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-20 h-20 bg-white rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                                                        <img src={qrisSettings.qris_image_url} alt="QRIS" className="w-full h-full object-contain" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">Ganti Foto</button>
+                                                        <p className="text-[10px] text-gray-500">Maks. 500KB</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50">Ganti Foto</button>
-                                                    <p className="text-[10px] text-gray-500">Maks. 500KB</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    {uploadingQris ? <span className="text-xs text-gray-500">Mengupload...</span> : <span className="text-xs font-medium text-gray-600">Upload QRIS (Maks 500KB)</span>}
-                                                </div>
-                                            </button>
-                                        )}
+                                            ) : (
+                                                <button onClick={() => fileInputRef.current?.click()} disabled={uploadingQris} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg bg-white hover:border-purple-400 hover:bg-purple-50 transition-colors">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        {uploadingQris ? <span className="text-xs text-gray-500">Mengupload...</span> : <span className="text-xs font-medium text-gray-600">Upload QRIS (Maks 500KB)</span>}
+                                                    </div>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Label QRIS</label>
+                                            <input type="text" value={qrisSettings.qris_label} onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })} placeholder="BCA QRIS..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label QRIS</label>
-                                        <input type="text" value={qrisSettings.qris_label} onChange={(e) => setQrisSettings({ ...qrisSettings, qris_label: e.target.value })} placeholder="BCA QRIS..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
-                                    </div>
-                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan QRIS</button>
+                                )}
+                            </div>
+
+                            {/* PPN */}
+                            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 flex flex-col transition-all">
+                                <div className="flex justify-between items-start gap-4 mb-2">
+                                    <h3 className="font-bold text-gray-900 text-base">PPN/Pajak</h3>
+                                    <button
+                                        onClick={() => setQrisSettings({ ...qrisSettings, tax_enabled: !qrisSettings.tax_enabled })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.tax_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    >
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.tax_enabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
                                 </div>
-                            )}
+                                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                    Aktifkan PPN otomatis ke semua transaksi. Pas untuk PKP (Pengusaha Kena Pajak).
+                                </p>
+
+                                {qrisSettings.tax_enabled && (
+                                    <div className="mt-1 pt-4 border-t border-gray-200 space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
+                                            <input type="number" min="0" step="0.1" value={qrisSettings.tax_rate || 11} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
+                                            <input type="text" value={qrisSettings.tax_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_label: e.target.value })} placeholder="PPN 11%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Service Charge */}
+                            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 flex flex-col transition-all">
+                                <div className="flex justify-between items-start gap-4 mb-2">
+                                    <h3 className="font-bold text-gray-900 text-base">Service Charge</h3>
+                                    <button
+                                        onClick={() => setQrisSettings({ ...qrisSettings, service_charge_enabled: !qrisSettings.service_charge_enabled })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.service_charge_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    >
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.service_charge_enabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                                    Aktifkan service charge untuk menambah biaya layanan ke setiap transaksi (Resto/Kafe).
+                                </p>
+
+                                {qrisSettings.service_charge_enabled && (
+                                    <div className="mt-1 pt-4 border-t border-gray-200 space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
+                                            <input type="number" min="0" step="0.5" value={qrisSettings.service_charge_rate || 10} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
+                                            <input type="text" value={qrisSettings.service_charge_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_label: e.target.value })} placeholder="Service 10%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Bahan Baku */}
+                            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 flex flex-col transition-all">
+                                <div className="flex justify-between items-start gap-4 mb-2">
+                                    <h3 className="font-bold text-gray-900 text-base">Bahan Baku</h3>
+                                    <button
+                                        onClick={() => setQrisSettings({ ...qrisSettings, raw_material_enabled: !qrisSettings.raw_material_enabled })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.raw_material_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    >
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.raw_material_enabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-0 flex-grow">
+                                    Aktifkan pencatatan bahan baku untuk melacak stok bahan, resep, dan biaya produk.
+                                </p>
+                            </div>
+
+                            {/* Stok Produk */}
+                            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 flex flex-col transition-all">
+                                <div className="flex justify-between items-start gap-4 mb-2">
+                                    <h3 className="font-bold text-gray-900 text-base">Stok Produk</h3>
+                                    <button
+                                        onClick={() => setQrisSettings({ ...qrisSettings, stock_enabled: !qrisSettings.stock_enabled })}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.stock_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
+                                    >
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.stock_enabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-0 flex-grow">
+                                    Aktifkan pencatatan dan manajemen stok produk untuk memantau ketersediaan dan nilai inventori.
+                                </p>
+                            </div>
                         </div>
 
-                        {/* PPN */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
-                            <div className="flex justify-between items-start gap-4 mb-2">
-                                <h3 className="font-bold text-gray-900 text-base">PPN/Pajak</h3>
-                                <button
-                                    onClick={() => setQrisSettings({ ...qrisSettings, tax_enabled: !qrisSettings.tax_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.tax_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.tax_enabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
-                                Aktifkan PPN otomatis ke semua transaksi. Pas untuk PKP (Pengusaha Kena Pajak).
-                            </p>
-
-                            {qrisSettings.tax_enabled && (
-                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
-                                        <input type="number" min="0" step="0.1" value={qrisSettings.tax_rate || 11} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
-                                        <input type="text" value={qrisSettings.tax_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, tax_label: e.target.value })} placeholder="PPN 11%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
-                                    </div>
-                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan PPN</button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Service Charge */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
-                            <div className="flex justify-between items-start gap-4 mb-2">
-                                <h3 className="font-bold text-gray-900 text-base">Service Charge</h3>
-                                <button
-                                    onClick={() => setQrisSettings({ ...qrisSettings, service_charge_enabled: !qrisSettings.service_charge_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.service_charge_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.service_charge_enabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
-                                Aktifkan service charge untuk menambah biaya layanan ke setiap transaksi (Resto/Kafe).
-                            </p>
-
-                            {qrisSettings.service_charge_enabled && (
-                                <div className="mt-1 pt-4 border-t border-gray-100 space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Tarif (%)</label>
-                                        <input type="number" min="0" step="0.5" value={qrisSettings.service_charge_rate || 10} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_rate: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1">Label</label>
-                                        <input type="text" value={qrisSettings.service_charge_label || ''} onChange={(e) => setQrisSettings({ ...qrisSettings, service_charge_label: e.target.value })} placeholder="Service 10%" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900" />
-                                    </div>
-                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Service</button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Bahan Baku */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
-                            <div className="flex justify-between items-start gap-4 mb-2">
-                                <h3 className="font-bold text-gray-900 text-base">Bahan Baku</h3>
-                                <button
-                                    onClick={() => setQrisSettings({ ...qrisSettings, raw_material_enabled: !qrisSettings.raw_material_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.raw_material_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.raw_material_enabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
-                                Aktifkan pencatatan bahan baku untuk melacak stok bahan, resep, dan biaya produk.
-                            </p>
-                            {qrisSettings.raw_material_enabled && (
-                                <div className="mt-1 pt-4 border-t border-gray-100">
-                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Perubahan</button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Stok Produk */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col transition-all hover:border-gray-300">
-                            <div className="flex justify-between items-start gap-4 mb-2">
-                                <h3 className="font-bold text-gray-900 text-base">Stok Produk</h3>
-                                <button
-                                    onClick={() => setQrisSettings({ ...qrisSettings, stock_enabled: !qrisSettings.stock_enabled })}
-                                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${qrisSettings.stock_enabled ? 'bg-purple-600' : 'bg-gray-200'}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${qrisSettings.stock_enabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
-                                Aktifkan pencatatan dan manajemen stok produk untuk memantau ketersediaan dan nilai inventori.
-                            </p>
-                            {qrisSettings.stock_enabled && (
-                                <div className="mt-1 pt-4 border-t border-gray-100">
-                                    <button onClick={handleSaveQrisSettings} disabled={savingQris} className="w-full py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50">Simpan Perubahan</button>
-                                </div>
-                            )}
+                        {/* Save Button for Konfigurasi Fitur */}
+                        <div className="flex justify-end pt-4 border-t border-gray-200">
+                            <button 
+                                onClick={handleSaveQrisSettings} 
+                                disabled={savingQris} 
+                                className="px-6 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-sm"
+                            >
+                                {savingQris ? 'Menyimpan...' : 'Simpan Konfigurasi'}
+                            </button>
                         </div>
                     </div>
 
