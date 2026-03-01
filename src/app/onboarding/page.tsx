@@ -31,6 +31,8 @@ export default function OnboardingPage() {
 
     // User agreement
     const [agreementAccepted, setAgreementAccepted] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
     const [error, setError] = useState('');
 
@@ -407,7 +409,7 @@ export default function OnboardingPage() {
                             />
                         </div>
                         <label htmlFor="agreement" className="text-sm text-gray-600 leading-relaxed cursor-pointer">
-                            Saya menyetujui <a href="#" className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Syarat dan Ketentuan</a> serta <a href="#" className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Kebijakan Privasi</a> aplikasi Warungin.
+                            Saya menyetujui <button type="button" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }} className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Syarat dan Ketentuan</button> serta <button type="button" onClick={(e) => { e.preventDefault(); setShowPrivacyModal(true); }} className="font-semibold text-purple-600 hover:text-purple-700 hover:underline">Kebijakan Privasi</button> aplikasi Warungin.
                         </label>
                     </div>
 
@@ -440,6 +442,252 @@ export default function OnboardingPage() {
                     </button>
                 </form>
             </div>
+
+            {/* Terms & Conditions Modal */}
+            {showTermsModal && (
+                <PolicyModal
+                    title="Syarat dan Ketentuan"
+                    onClose={() => setShowTermsModal(false)}
+                >
+                    <TermsContent />
+                </PolicyModal>
+            )}
+
+            {/* Privacy Policy Modal */}
+            {showPrivacyModal && (
+                <PolicyModal
+                    title="Kebijakan Privasi"
+                    onClose={() => setShowPrivacyModal(false)}
+                >
+                    <PrivacyContent />
+                </PolicyModal>
+            )}
         </div>
+    );
+}
+
+function PolicyModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                {/* Content */}
+                <div className="overflow-y-auto p-6 text-sm text-gray-700 leading-relaxed space-y-4">
+                    {children}
+                </div>
+                {/* Footer */}
+                <div className="p-4 border-t border-gray-100">
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors"
+                    >
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function TermsContent() {
+    return (
+        <>
+            <p className="text-xs text-gray-400">Terakhir diperbarui: 1 Maret 2026</p>
+
+            <h3 className="font-bold text-gray-900 text-base">1. Penerimaan Ketentuan</h3>
+            <p>Dengan mengakses dan menggunakan aplikasi Warungin (&quot;Aplikasi&quot;), Anda menyetujui dan terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak menyetujui ketentuan ini, mohon untuk tidak menggunakan Aplikasi.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">2. Deskripsi Layanan</h3>
+            <p>Warungin adalah platform manajemen bisnis berbasis cloud yang menyediakan fitur-fitur berikut:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Point of Sale (POS) untuk pencatatan transaksi penjualan</li>
+                <li>Manajemen produk dan inventaris</li>
+                <li>Manajemen bahan baku</li>
+                <li>Laporan keuangan dan analitik bisnis</li>
+                <li>Manajemen pelanggan</li>
+                <li>Manajemen outlet dan staf</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">3. Akun Pengguna</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Anda bertanggung jawab untuk menjaga kerahasiaan informasi akun Anda.</li>
+                <li>Anda bertanggung jawab atas semua aktivitas yang terjadi di bawah akun Anda.</li>
+                <li>Anda wajib memberikan informasi yang akurat dan terkini saat mendaftar.</li>
+                <li>Satu akun hanya boleh digunakan oleh satu entitas bisnis.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">4. Paket Layanan dan Pembayaran</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Warungin menyediakan paket Gratis dengan fitur terbatas dan paket berbayar dengan fitur lebih lengkap.</li>
+                <li>Pembayaran untuk paket berbayar dilakukan melalui metode pembayaran yang tersedia di Aplikasi.</li>
+                <li>Harga paket dapat berubah sewaktu-waktu dengan pemberitahuan sebelumnya kepada pengguna.</li>
+                <li>Pembayaran yang telah dilakukan tidak dapat dikembalikan (non-refundable), kecuali dinyatakan lain.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">5. Penggunaan yang Dilarang</h3>
+            <p>Anda dilarang menggunakan Aplikasi untuk:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Kegiatan yang melanggar hukum atau peraturan yang berlaku di Indonesia.</li>
+                <li>Mengunggah, menyimpan, atau mendistribusikan konten yang bersifat ilegal, berbahaya, atau melanggar hak pihak lain.</li>
+                <li>Mencoba mengakses sistem, jaringan, atau data secara tidak sah.</li>
+                <li>Mengganggu kinerja atau keamanan Aplikasi.</li>
+                <li>Menyalahgunakan fitur promosi, kode referral, atau program afiliasi.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">6. Kepemilikan Data</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Data bisnis yang Anda masukkan ke dalam Aplikasi tetap menjadi milik Anda.</li>
+                <li>Warungin berhak menggunakan data secara agregat dan anonim untuk keperluan analitik dan peningkatan layanan.</li>
+                <li>Anda dapat meminta ekspor atau penghapusan data Anda kapan saja dengan menghubungi tim dukungan kami.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">7. Ketersediaan Layanan</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Kami berusaha menjaga ketersediaan layanan 24/7, namun tidak menjamin layanan bebas gangguan.</li>
+                <li>Pemeliharaan terjadwal akan diinformasikan sebelumnya melalui Aplikasi atau email.</li>
+                <li>Kami tidak bertanggung jawab atas kerugian akibat gangguan layanan di luar kendali kami.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">8. Batasan Tanggung Jawab</h3>
+            <p>Warungin disediakan &quot;sebagaimana adanya&quot; tanpa jaminan apapun. Kami tidak bertanggung jawab atas:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Kerugian bisnis, kehilangan keuntungan, atau kerusakan data yang timbul dari penggunaan Aplikasi.</li>
+                <li>Keputusan bisnis yang diambil berdasarkan data atau laporan dari Aplikasi.</li>
+                <li>Ketidakakuratan data yang dimasukkan oleh pengguna.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">9. Penghentian Layanan</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Anda dapat menghentikan penggunaan Aplikasi kapan saja.</li>
+                <li>Kami berhak menangguhkan atau menghentikan akun Anda jika terjadi pelanggaran terhadap Syarat dan Ketentuan ini.</li>
+                <li>Setelah penghentian, data Anda akan disimpan selama 30 hari sebelum dihapus secara permanen.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">10. Perubahan Ketentuan</h3>
+            <p>Kami berhak mengubah Syarat dan Ketentuan ini sewaktu-waktu. Perubahan akan berlaku efektif setelah dipublikasikan di Aplikasi. Penggunaan berkelanjutan setelah perubahan dianggap sebagai persetujuan Anda terhadap ketentuan yang diperbarui.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">11. Hukum yang Berlaku</h3>
+            <p>Syarat dan Ketentuan ini diatur oleh dan ditafsirkan sesuai dengan hukum Republik Indonesia. Segala sengketa yang timbul akan diselesaikan melalui musyawarah terlebih dahulu, dan jika tidak tercapai kesepakatan, melalui pengadilan yang berwenang di Indonesia.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">12. Kontak</h3>
+            <p>Jika Anda memiliki pertanyaan mengenai Syarat dan Ketentuan ini, silakan hubungi kami melalui email di <span className="font-semibold">support@warungin.com</span>.</p>
+        </>
+    );
+}
+
+function PrivacyContent() {
+    return (
+        <>
+            <p className="text-xs text-gray-400">Terakhir diperbarui: 1 Maret 2026</p>
+
+            <h3 className="font-bold text-gray-900 text-base">1. Pendahuluan</h3>
+            <p>Warungin (&quot;kami&quot;) berkomitmen untuk melindungi privasi dan keamanan data pribadi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi informasi Anda saat menggunakan aplikasi Warungin.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">2. Data yang Kami Kumpulkan</h3>
+            <p className="font-semibold text-gray-800">a. Data Pribadi:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Nama lengkap</li>
+                <li>Alamat email (termasuk melalui Google OAuth)</li>
+                <li>Nomor telepon</li>
+                <li>Alamat bisnis (provinsi, kota, kode pos)</li>
+            </ul>
+            <p className="font-semibold text-gray-800 mt-2">b. Data Bisnis:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Nama dan jenis usaha</li>
+                <li>Data produk dan harga</li>
+                <li>Data transaksi penjualan</li>
+                <li>Data inventaris dan stok</li>
+                <li>Data pelanggan yang Anda masukkan</li>
+                <li>Data bahan baku</li>
+            </ul>
+            <p className="font-semibold text-gray-800 mt-2">c. Data Teknis:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Alamat IP dan informasi perangkat</li>
+                <li>Data penggunaan Aplikasi (fitur yang diakses, waktu akses)</li>
+                <li>Log aktivitas untuk keamanan</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">3. Cara Kami Menggunakan Data</h3>
+            <p>Data Anda digunakan untuk:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Menyediakan dan memelihara layanan Aplikasi</li>
+                <li>Memproses transaksi dan menghasilkan laporan bisnis Anda</li>
+                <li>Mengelola akun dan autentikasi pengguna</li>
+                <li>Mengirim pemberitahuan penting terkait layanan</li>
+                <li>Meningkatkan kualitas dan fitur Aplikasi</li>
+                <li>Memproses pembayaran langganan</li>
+                <li>Mencegah penipuan dan menjaga keamanan platform</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">4. Penyimpanan dan Keamanan Data</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Data Anda disimpan pada server yang aman dengan enkripsi standar industri.</li>
+                <li>Kami menggunakan protokol HTTPS untuk semua transmisi data.</li>
+                <li>Akses ke database dibatasi hanya untuk personel yang berwenang.</li>
+                <li>Token autentikasi (JWT) digunakan untuk mengamankan sesi pengguna.</li>
+                <li>Kami melakukan backup data secara berkala untuk mencegah kehilangan data.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">5. Berbagi Data dengan Pihak Ketiga</h3>
+            <p>Kami <span className="font-semibold">tidak menjual</span> data pribadi Anda. Data hanya dibagikan dengan:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li><span className="font-semibold">Penyedia layanan pembayaran</span> (Doku) — untuk memproses pembayaran langganan.</li>
+                <li><span className="font-semibold">Google OAuth</span> — untuk autentikasi akun.</li>
+                <li><span className="font-semibold">Penyedia infrastruktur cloud</span> — untuk hosting dan penyimpanan data secara aman.</li>
+                <li><span className="font-semibold">Pihak berwenang</span> — jika diwajibkan oleh hukum yang berlaku.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">6. Hak Anda</h3>
+            <p>Anda memiliki hak untuk:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li><span className="font-semibold">Mengakses</span> — melihat data pribadi yang kami simpan tentang Anda.</li>
+                <li><span className="font-semibold">Memperbaiki</span> — memperbarui atau mengoreksi data yang tidak akurat.</li>
+                <li><span className="font-semibold">Menghapus</span> — meminta penghapusan data pribadi Anda.</li>
+                <li><span className="font-semibold">Mengekspor</span> — meminta salinan data Anda dalam format yang dapat dibaca.</li>
+                <li><span className="font-semibold">Mencabut persetujuan</span> — menarik kembali persetujuan atas penggunaan data kapan saja.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">7. Cookie dan Penyimpanan Lokal</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Kami menggunakan localStorage untuk menyimpan token autentikasi sesi Anda.</li>
+                <li>Cookie digunakan untuk menyimpan preferensi dan kode referral.</li>
+                <li>Anda dapat menghapus data ini melalui pengaturan browser Anda kapan saja.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">8. Retensi Data</h3>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Data akun aktif disimpan selama akun Anda aktif.</li>
+                <li>Setelah penghapusan akun, data akan dihapus dalam waktu 30 hari.</li>
+                <li>Data transaksi dapat disimpan lebih lama sesuai kebutuhan hukum dan perpajakan.</li>
+                <li>Backup sistem dihapus secara berkala sesuai jadwal retensi.</li>
+            </ul>
+
+            <h3 className="font-bold text-gray-900 text-base">9. Perlindungan Data Anak</h3>
+            <p>Aplikasi Warungin tidak ditujukan untuk pengguna di bawah usia 18 tahun. Kami tidak secara sengaja mengumpulkan data dari anak-anak.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">10. Perubahan Kebijakan</h3>
+            <p>Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Perubahan signifikan akan diberitahukan melalui email atau notifikasi di dalam Aplikasi. Kami mendorong Anda untuk meninjau kebijakan ini secara berkala.</p>
+
+            <h3 className="font-bold text-gray-900 text-base">11. Kontak</h3>
+            <p>Untuk pertanyaan mengenai Kebijakan Privasi ini atau permintaan terkait data pribadi Anda, silakan hubungi kami:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li>Email: <span className="font-semibold">support@warungin.com</span></li>
+            </ul>
+        </>
     );
 }
