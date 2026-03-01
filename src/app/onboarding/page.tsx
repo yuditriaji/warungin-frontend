@@ -36,51 +36,55 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (!isAuthenticated()) {
-                router.push('/login');
-                return;
+            try {
+                if (!isAuthenticated()) {
+                    router.push('/login');
+                    return;
+                }
+
+                const data = await getCurrentUser();
+                if (!data) {
+                    // Token invalid or expired — send back to login
+                    router.push('/login');
+                    return;
+                }
+
+                setTenant(data.tenant);
+                setBusinessName(data.tenant.name || '');
+
+                // If already has business_type, redirect to dashboard
+                if (data.tenant.business_type) {
+                    router.push('/dashboard');
+                    return;
+                }
+
+                // Load provinces
+                const provincesData = await getProvinces();
+                setProvinces(provincesData);
+
+                // Helper to get cookie value
+                const getCookie = (name: string) => {
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) return parts.pop()?.split(';').shift();
+                    return null;
+                };
+
+                // Check for referral code in URL params first, then cookie
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlRef = urlParams.get('ref');
+                const cookieRef = getCookie('referral_code');
+                const refCode = urlRef || cookieRef;
+
+                if (refCode) {
+                    setReferralCode(refCode);
+                    validateReferralCode(refCode);
+                }
+            } catch (error) {
+                console.error('Onboarding auth check failed:', error);
+            } finally {
+                setLoading(false);
             }
-
-            const data = await getCurrentUser();
-            if (!data) {
-                // Token invalid or expired — send back to login
-                router.push('/login');
-                return;
-            }
-
-            setTenant(data.tenant);
-            setBusinessName(data.tenant.name || '');
-
-            // If already has business_type, redirect to dashboard
-            if (data.tenant.business_type) {
-                router.push('/dashboard');
-                return;
-            }
-
-            // Load provinces
-            const provincesData = await getProvinces();
-            setProvinces(provincesData);
-
-            // Helper to get cookie value
-            const getCookie = (name: string) => {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop()?.split(';').shift();
-                return null;
-            };
-
-            // Check for referral code in URL params first, then cookie
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlRef = urlParams.get('ref');
-            const cookieRef = getCookie('referral_code');
-            const refCode = urlRef || cookieRef;
-
-            if (refCode) {
-                setReferralCode(refCode);
-                validateReferralCode(refCode);
-            }
-
-            setLoading(false);
         };
 
         checkAuth();
