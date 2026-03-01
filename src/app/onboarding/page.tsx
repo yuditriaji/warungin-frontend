@@ -42,15 +42,19 @@ export default function OnboardingPage() {
             }
 
             const data = await getCurrentUser();
-            if (data) {
-                setTenant(data.tenant);
-                setBusinessName(data.tenant.name || '');
+            if (!data) {
+                // Token invalid or expired — send back to login
+                router.push('/login');
+                return;
+            }
 
-                // If already has business_type, redirect to dashboard
-                if (data.tenant.business_type) {
-                    router.push('/dashboard');
-                    return;
-                }
+            setTenant(data.tenant);
+            setBusinessName(data.tenant.name || '');
+
+            // If already has business_type, redirect to dashboard
+            if (data.tenant.business_type) {
+                router.push('/dashboard');
+                return;
             }
 
             // Load provinces

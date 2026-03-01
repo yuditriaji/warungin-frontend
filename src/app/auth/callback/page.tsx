@@ -32,6 +32,12 @@ function AuthCallbackContent() {
                 refresh_token: refreshToken,
             });
 
+            // Persist new-user flag in sessionStorage BEFORE clearing URL,
+            // so it survives the replaceState call and any subsequent re-renders.
+            if (isNewUser) {
+                sessionStorage.setItem('is_new_user', 'true');
+            }
+
             // Clear tokens from URL to prevent leakage in browser history
             window.history.replaceState({}, document.title, '/auth/callback');
 
@@ -40,6 +46,7 @@ function AuthCallbackContent() {
             if (isNewUser) {
                 setMessage('Akun berhasil dibuat! Mengalihkan ke profil bisnis...');
                 setTimeout(() => {
+                    sessionStorage.removeItem('is_new_user');
                     router.push('/onboarding');
                 }, 1500);
             } else {
@@ -49,13 +56,24 @@ function AuthCallbackContent() {
                 }, 1000);
             }
         } else if (storedToken) {
-            // Tokens already in localStorage (URL was cleared), redirect to dashboard
+            // Tokens already in localStorage (URL was cleared).
+            // Check sessionStorage for the new-user flag in case this branch runs
+            // after replaceState removed it from the URL (e.g. React StrictMode second run).
             processedRef.current = true;
             setStatus('success');
-            setMessage('Login berhasil! Mengalihkan ke dashboard...');
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 500);
+            const pendingNewUser = sessionStorage.getItem('is_new_user') === 'true';
+            if (pendingNewUser) {
+                setMessage('Akun berhasil dibuat! Mengalihkan ke profil bisnis...');
+                setTimeout(() => {
+                    sessionStorage.removeItem('is_new_user');
+                    router.push('/onboarding');
+                }, 500);
+            } else {
+                setMessage('Login berhasil! Mengalihkan ke dashboard...');
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 500);
+            }
         } else {
             // No tokens found anywhere
             processedRef.current = true;
