@@ -1757,11 +1757,11 @@ export interface Region {
     name: string;
 }
 
-const REGION_API_URL = 'https://warungin-backend.onrender.com/api/v1';
+
 
 export const getProvinces = async (): Promise<Region[]> => {
     try {
-        const response = await fetch(`${REGION_API_URL}/regions/provinces`);
+        const response = await fetch(`${API_URL}/api/v1/regions/provinces`);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];
@@ -1774,7 +1774,7 @@ export const getProvinces = async (): Promise<Region[]> => {
 
 export const getCities = async (provinceId: string): Promise<Region[]> => {
     try {
-        const response = await fetch(`${REGION_API_URL}/regions/provinces/${provinceId}/cities`);
+        const response = await fetch(`${API_URL}/api/v1/regions/provinces/${provinceId}/cities`);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];
@@ -1787,7 +1787,7 @@ export const getCities = async (provinceId: string): Promise<Region[]> => {
 
 export const getDistricts = async (cityId: string): Promise<Region[]> => {
     try {
-        const response = await fetch(`${REGION_API_URL}/regions/cities/${cityId}/districts`);
+        const response = await fetch(`${API_URL}/api/v1/regions/cities/${cityId}/districts`);
         if (response.ok) {
             const data = await response.json();
             return data.data || [];

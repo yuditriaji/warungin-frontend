@@ -25,53 +25,58 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (!isAuthenticated()) {
-                router.push('/login');
-                return;
-            }
-
-            const data = await getCurrentUser();
-            if (data) {
-                setUser(data.user);
-                setTenant(data.tenant);
-
-                // Check if onboarding is complete (business_type is set)
-                if (!data.tenant.business_type) {
-                    router.push('/onboarding');
+            try {
+                if (!isAuthenticated()) {
+                    router.push('/login');
                     return;
                 }
 
-                // Fetch subscription to get plan
-                const subData = await getSubscription();
-                const plan = subData?.subscription?.plan || 'gratis';
-                setUserPlan(plan);
+                const data = await getCurrentUser();
+                if (data) {
+                    setUser(data.user);
+                    setTenant(data.tenant);
 
-                // Fetch tenant settings for feature flags
-                const tenantSettings = await getTenantSettings();
-                setRawMaterialEnabled(tenantSettings.raw_material_enabled ?? false);
-                setStockEnabled(tenantSettings.stock_enabled ?? false);
-
-                // Check if plan supports outlets (Bisnis or Enterprise only)
-                const isBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
-
-                // Fetch outlets only if user is manager/owner AND on Bisnis+ plan
-                if (isBisnisPlan && (data.user?.role === 'owner' || data.user?.role === 'manager')) {
-                    const outletList = await getOutlets();
-                    setOutlets(outletList);
-                    // Set current outlet from user's outlet_id or first outlet
-                    if (data.user.outlet_id) {
-                        const current = outletList.find(o => o.id === data.user.outlet_id);
-                        setCurrentOutlet(current || outletList[0] || null);
-                    } else if (outletList.length > 0) {
-                        setCurrentOutlet(outletList[0]);
+                    // Check if onboarding is complete (business_type is set)
+                    if (!data.tenant.business_type) {
+                        router.push('/onboarding');
+                        return;
                     }
+
+                    // Fetch subscription to get plan
+                    const subData = await getSubscription();
+                    const plan = subData?.subscription?.plan || 'gratis';
+                    setUserPlan(plan);
+
+                    // Fetch tenant settings for feature flags
+                    const tenantSettings = await getTenantSettings();
+                    setRawMaterialEnabled(tenantSettings.raw_material_enabled ?? false);
+                    setStockEnabled(tenantSettings.stock_enabled ?? false);
+
+                    // Check if plan supports outlets (Bisnis or Enterprise only)
+                    const isBisnisPlan = plan === 'bisnis' || plan === 'enterprise';
+
+                    // Fetch outlets only if user is manager/owner AND on Bisnis+ plan
+                    if (isBisnisPlan && (data.user?.role === 'owner' || data.user?.role === 'manager')) {
+                        const outletList = await getOutlets();
+                        setOutlets(outletList);
+                        // Set current outlet from user's outlet_id or first outlet
+                        if (data.user.outlet_id) {
+                            const current = outletList.find(o => o.id === data.user.outlet_id);
+                            setCurrentOutlet(current || outletList[0] || null);
+                        } else if (outletList.length > 0) {
+                            setCurrentOutlet(outletList[0]);
+                        }
+                    }
+                } else {
+                    // Clear invalid tokens to prevent redirect loop
+                    clearTokens();
+                    router.push('/login');
                 }
-            } else {
-                // Clear invalid tokens to prevent redirect loop
-                clearTokens();
-                router.push('/login');
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         checkAuth();
