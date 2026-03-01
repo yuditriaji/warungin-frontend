@@ -34,6 +34,14 @@ export default function LoginPage() {
             setCookie('referral_code', refCode);
         }
 
+        // Check for OAuth error passed from backend redirect
+        const oauthError = urlParams.get('error');
+        if (oauthError) {
+            setError(oauthError);
+            // Clear error from URL to prevent stale display on refresh
+            window.history.replaceState({}, document.title, '/login');
+        }
+
         // If already authenticated, redirect to dashboard
         if (isAuthenticated()) {
             router.push('/dashboard');
