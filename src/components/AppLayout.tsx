@@ -19,6 +19,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const [userPlan, setUserPlan] = useState<string>('gratis');
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [desktopCollapsed, setDesktopCollapsed] = useState(false);
     const [outletDropdownOpen, setOutletDropdownOpen] = useState(false);
     const [rawMaterialEnabled, setRawMaterialEnabled] = useState(false);
     const [stockEnabled, setStockEnabled] = useState(false);
@@ -105,13 +106,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 userName={user?.name}
                 tenantName={tenant?.name}
                 isOpen={sidebarOpen}
+                isCollapsed={desktopCollapsed}
                 onClose={() => setSidebarOpen(false)}
                 rawMaterialEnabled={rawMaterialEnabled}
                 stockEnabled={stockEnabled}
             />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${desktopCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
                 {/* Top Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
                     <div className="flex items-center gap-4">
@@ -119,11 +121,24 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         <button
                             onClick={() => setSidebarOpen(true)}
                             className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 lg:hidden"
+                            title="Menu"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
+
+                        {/* Desktop toggle button */}
+                        <button
+                            onClick={() => setDesktopCollapsed(!desktopCollapsed)}
+                            className="hidden lg:flex p-2 rounded-lg hover:bg-gray-100 text-gray-500 mr-2"
+                            title={desktopCollapsed ? "Expand Menu" : "Collapse Menu"}
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+
 
                         {/* Outlet Switcher - Only show if multiple outlets */}
                         {outlets.length > 1 && (

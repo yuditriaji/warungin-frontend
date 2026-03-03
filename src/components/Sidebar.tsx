@@ -100,7 +100,6 @@ const menuItems: SidebarItem[] = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
         ),
-        roles: ['owner', 'manager'],
         minPlan: ['pemula', 'bisnis', 'enterprise'],
     },
     {
@@ -166,12 +165,13 @@ interface SidebarProps {
     userName?: string;
     tenantName?: string;
     isOpen?: boolean;
+    isCollapsed?: boolean;
     onClose?: () => void;
     rawMaterialEnabled?: boolean;
     stockEnabled?: boolean;
 }
 
-export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', businessType = '', userName = '', tenantName = '', isOpen = false, onClose, rawMaterialEnabled = false, stockEnabled = false }: SidebarProps) {
+export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', businessType = '', userName = '', tenantName = '', isOpen = false, isCollapsed = false, onClose, rawMaterialEnabled = false, stockEnabled = false }: SidebarProps) {
     const pathname = usePathname();
     const isServiceBusiness = checkIsServiceBusiness(businessType);
 
@@ -209,16 +209,23 @@ export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', busin
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed lg:static inset-y-0 left-0 z-50
-                    w-64 bg-white border-r border-gray-200 
-                    flex flex-col transition-transform duration-300
+                    fixed inset-y-0 left-0 z-50
+                    bg-white border-r border-gray-200 
+                    flex flex-col transition-all duration-300
                     ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    ${isCollapsed ? 'lg:w-20' : 'w-64'}
                 `}
             >
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
+                <div className={`h-16 flex items-center border-b border-gray-100 ${isCollapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-purple-600">Warungin</span>
+                        {isCollapsed ? (
+                            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                                <span className="text-xl font-bold text-purple-600">W</span>
+                            </div>
+                        ) : (
+                            <span className="text-2xl font-bold text-purple-600">Warungin</span>
+                        )}
                     </Link>
                     <button
                         onClick={onClose}
@@ -239,31 +246,32 @@ export default function Sidebar({ userRole = 'owner', userPlan = 'gratis', busin
                                 key={item.href}
                                 href={item.href}
                                 onClick={onClose}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive
+                                className={`flex items-center px-3 py-3 rounded-xl transition-all ${isActive
                                     ? 'bg-purple-100 text-purple-700 font-medium'
                                     : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
+                                    } ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+                                title={isCollapsed ? getMenuName(item) : ''}
                             >
                                 <span className={isActive ? 'text-purple-600' : ''}>{item.icon}</span>
-                                <span>{getMenuName(item)}</span>
+                                {!isCollapsed && <span>{getMenuName(item)}</span>}
                             </Link>
                         );
                     })}
                 </nav>
 
                 {/* User Info */}
-                <div className="p-4 border-t border-gray-100">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="text-purple-600 font-medium">
-                                {userName.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                        </div>
+                <div className={`p-4 border-t border-gray-100 flex ${isCollapsed ? 'justify-center' : 'items-center gap-3'}`}>
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0" title={isCollapsed ? userName : ''}>
+                        <span className="text-purple-600 font-medium">
+                            {userName.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                    </div>
+                    {!isCollapsed && (
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{userName || 'User'}</p>
                             <p className="text-xs text-gray-500 truncate">{tenantName || 'Business'}</p>
                         </div>
-                    </div>
+                    )}
                 </div>
             </aside>
         </>
