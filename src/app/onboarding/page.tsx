@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, getCurrentUser, updateTenantProfile, BUSINESS_TYPES, Tenant, Region, getProvinces, getCities } from '@/lib/api';
+import { trackOnboardingComplete } from '@/lib/analytics';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -187,6 +188,7 @@ export default function OnboardingPage() {
         });
 
         if (result) {
+            trackOnboardingComplete(finalBusinessType);
             router.push('/dashboard');
         } else {
             setError('Gagal menyimpan profil. Silakan coba lagi.');

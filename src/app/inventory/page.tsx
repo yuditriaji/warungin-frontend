@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { InventoryItem, InventorySummary, getInventory, getInventorySummary, updateStock, Outlet, getOutlets, getCurrentUser, getSubscription, importInventory, downloadImportTemplate, ImportResult } from '@/lib/api';
+import { trackFeatureUsed } from '@/lib/analytics';
 
 export default function InventoryPage() {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -24,6 +25,7 @@ export default function InventoryPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        trackFeatureUsed('inventory');
         initPage();
     }, []);
 

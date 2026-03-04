@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { DashboardStats, TopProduct, Transaction, User, getDashboardStats, getTopProducts, getRecentTransactions, getCurrentUser } from '@/lib/api';
+import { trackFeatureUsed } from '@/lib/analytics';
 import { Plus, Package, Bell, ShoppingCart, ClipboardList, FileText, BarChart3, TrendingUp, CircleDollarSign, BarChart, Clock, Inbox } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +32,7 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
+        trackFeatureUsed('dashboard');
         loadDashboard();
     }, []);
 

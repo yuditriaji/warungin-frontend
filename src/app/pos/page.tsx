@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import Receipt from '@/components/Receipt';
 import { Product, getProducts, createTransaction, Transaction, TenantSettings, getTenantSettings, Outlet, getOutlets, getSubscription, getCurrentUser } from '@/lib/api';
+import { trackFeatureUsed } from '@/lib/analytics';
 
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -31,6 +32,7 @@ export default function POSPage() {
     const [hasMultiOutlet, setHasMultiOutlet] = useState(false);
 
     useEffect(() => {
+        trackFeatureUsed('pos');
         initPage();
     }, []);
 

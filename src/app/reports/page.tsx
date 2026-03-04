@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { SalesReport, ProductSalesReport, Outlet, getSalesReport, getProductSalesReport, getOutlets, getSubscription } from '@/lib/api';
+import { trackFeatureUsed } from '@/lib/analytics';
 
 export default function ReportsPage() {
     const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
@@ -17,6 +18,7 @@ export default function ReportsPage() {
     const [isBisnisPlan, setIsBisnisPlan] = useState(false);
 
     useEffect(() => {
+        trackFeatureUsed('reports');
         initPage();
     }, []);
 
